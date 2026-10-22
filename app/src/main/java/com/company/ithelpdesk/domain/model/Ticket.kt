@@ -46,7 +46,7 @@ enum class SlaState(val label: String) {
 }
 
 enum class ContactMethod(val label: String) {
-    IN_APP("In-app chat"),
+    IN_APP("AnyDesk"),
     PHONE("Phone call"),
     EMAIL("Email"),
     IN_PERSON("Visit my desk");
