@@ -11,6 +11,7 @@ import com.company.ithelpdesk.domain.model.TicketStatus
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.time.Instant
 
 class RolesAndNotificationsTest {
 
@@ -33,6 +34,12 @@ class RolesAndNotificationsTest {
         assertEquals("BGL-261022-12345", TicketNumber.format(day, 12345))
         assertEquals("tickets-261022", TicketNumber.counterId(day))
         assertEquals("BGL-260105-0001", TicketNumber.format(java.time.LocalDate.of(2026, 1, 5), 1))
+    }
+
+    @Test fun `old ticket numbers are displayed as BGL-YYMMDD-XXXX`() {
+        val ms = Instant.parse("2026-10-22T10:00:00Z").toEpochMilli()
+        assertEquals("BGL-261022-0010", TicketNumber.formatDisplayNumber("BGL-2026-0010", ms))
+        assertEquals("BGL-261022-0001", TicketNumber.formatDisplayNumber("BGL-261022-0001", ms))
     }
 
     @Test fun `ticket date uses Bangladesh time`() {

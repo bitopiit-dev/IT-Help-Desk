@@ -3,6 +3,8 @@
 
 package com.company.ithelpdesk.domain.model
 
+import com.company.ithelpdesk.domain.logic.TicketNumber
+
 enum class TicketStatus(val label: String) {
     NEW("New"),
     ASSIGNED("Assigned"),
@@ -119,8 +121,11 @@ data class Ticket(
     val resolution: Resolution? = null,
     val reopenCount: Int = 0,
 ) {
-    /** Ticket numbers come from a Firestore counter; offline-created tickets show a short id instead. */
-    val displayNumber: String get() = ticketNumber.ifBlank { "#" + id.take(6).uppercase() }
+    /** Ticket numbers come from a Firestore counter; converts old format if needed. */
+    val displayNumber: String get() {
+        if (ticketNumber.isBlank()) return "#" + id.take(6).uppercase()
+        return TicketNumber.formatDisplayNumber(ticketNumber, createdAt)
+    }
 }
 
 data class Comment(

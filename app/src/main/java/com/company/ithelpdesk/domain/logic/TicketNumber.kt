@@ -28,4 +28,18 @@ object TicketNumber {
     /** Four digits, growing to five only past 9,999 tickets in one day. */
     fun format(date: LocalDate, sequence: Long): String =
         "$PREFIX-${datePart(date)}-" + sequence.toString().padStart(4, '0')
+
+    private val OLD_PATTERN = Regex("""^BGL-(\d{4})-(\d{4,})$""")
+
+    /** Converts older BGL-YYYY-XXXX ticket numbers to BGL-YYMMDD-XXXX using ticket creation date. */
+    fun formatDisplayNumber(ticketNumber: String, createdAt: Long): String {
+        if (ticketNumber.isBlank()) return ticketNumber
+        val match = OLD_PATTERN.matchEntire(ticketNumber.trim())
+        if (match != null) {
+            val counterStr = match.groupValues[2]
+            val date = dateOf(if (createdAt > 0) createdAt else System.currentTimeMillis())
+            return "$PREFIX-${datePart(date)}-$counterStr"
+        }
+        return ticketNumber
+    }
 }
