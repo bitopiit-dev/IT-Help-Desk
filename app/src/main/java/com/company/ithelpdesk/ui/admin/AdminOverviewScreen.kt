@@ -42,6 +42,7 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberDateRangePickerState
@@ -54,6 +55,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -74,6 +76,7 @@ import com.company.ithelpdesk.ui.components.TrendChart
 import com.company.ithelpdesk.ui.theme.LocalBrand
 import com.company.ithelpdesk.util.CsvExporter
 import com.company.ithelpdesk.util.formatDuration
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -197,13 +200,49 @@ fun AdminOverviewScreen(
                 }
                 item {
                     AppCard {
-                        Text("Tickets by status", style = MaterialTheme.typography.titleMedium)
+                        val totalTickets = d.byStatus.values.sum()
+                        val resolvedAndClosed = (d.byStatus[TicketStatus.RESOLVED] ?: 0) + (d.byStatus[TicketStatus.CLOSED] ?: 0)
+                        val resolutionRate = if (totalTickets > 0) (resolvedAndClosed * 100f / totalTickets) else 100f
+
+                        // Dynamic status color rule: 80%-100% Green, 60%-79% Lime, <50% Red
+                        val statusColor = when {
+                            resolutionRate >= 80f -> Color(0xFF22C55E) // Green
+                            resolutionRate >= 60f -> Color(0xFF84CC16) // Lime
+                            else -> Color(0xFFEF4444)                  // Red
+                        }
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Text("Tickets by status", style = MaterialTheme.typography.titleMedium)
+                            if (totalTickets > 0) {
+                                Surface(
+                                    color = statusColor.copy(alpha = 0.15f),
+                                    shape = CircleShape,
+                                ) {
+                                    Text(
+                                        text = String.format(Locale.US, "%.0f%% resolved", resolutionRate),
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = statusColor,
+                                        fontWeight = FontWeight.Bold,
+                                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                                    )
+                                }
+                            }
+                        }
                         Spacer(Modifier.height(10.dp))
                         val palette = mapOf(
-                            TicketStatus.NEW to tints[0], TicketStatus.ASSIGNED to tints[4], TicketStatus.IN_PROGRESS to tints[1],
-                            TicketStatus.ON_HOLD_USER to tints[3], TicketStatus.ON_HOLD_PARTS to Color(0xFFFB923C),
-                            TicketStatus.RESOLVED to Color(0xFF34D399), TicketStatus.CLOSED to Color(0xFF64748B),
-                            TicketStatus.REOPENED to tints[2], TicketStatus.CANCELLED to Color(0xFF475569),
+                            TicketStatus.NEW to tints[0],
+                            TicketStatus.ASSIGNED to tints[4],
+                            TicketStatus.IN_PROGRESS to tints[1],
+                            TicketStatus.ON_HOLD_USER to tints[3],
+                            TicketStatus.ON_HOLD_PARTS to Color(0xFFFB923C),
+                            TicketStatus.RESOLVED to statusColor,
+                            TicketStatus.CLOSED to statusColor,
+                            TicketStatus.REOPENED to tints[2],
+                            TicketStatus.CANCELLED to Color(0xFF475569),
                         )
                         DonutChart(TicketStatus.entries.map { ChartSlice(it.label, d.byStatus[it] ?: 0, palette.getValue(it)) })
                     }

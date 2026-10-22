@@ -59,14 +59,17 @@ object ReportImage {
     private val CREATED = Color.parseColor("#8B5CF6")
     private val RESOLVED = Color.parseColor("#22C55E")
 
-    private fun statusColor(s: TicketStatus): Int = when (s) {
+    private fun statusColor(s: TicketStatus, ratePct: Float = 100f): Int = when (s) {
+        TicketStatus.RESOLVED, TicketStatus.CLOSED -> when {
+            ratePct >= 80f -> Color.parseColor("#22C55E") // Green (80%-100%)
+            ratePct >= 60f -> Color.parseColor("#84CC16") // Lime (60%-79%)
+            else -> Color.parseColor("#EF4444")           // Red (<50%)
+        }
         TicketStatus.NEW -> Color.parseColor("#06B6D4")
         TicketStatus.ASSIGNED -> Color.parseColor("#8B5CF6")
         TicketStatus.IN_PROGRESS -> Color.parseColor("#6366F1")
         TicketStatus.ON_HOLD_USER -> Color.parseColor("#F59E0B")
         TicketStatus.ON_HOLD_PARTS -> Color.parseColor("#F97316")
-        TicketStatus.RESOLVED -> Color.parseColor("#22C55E")
-        TicketStatus.CLOSED -> Color.parseColor("#64748B")
         TicketStatus.REOPENED -> Color.parseColor("#EC4899")
         TicketStatus.CANCELLED -> Color.parseColor("#94A3B8")
     }
@@ -111,9 +114,13 @@ object ReportImage {
     fun render(context: Context, data: DashboardData, rangeLabel: String): Bitmap {
         val f = Fonts(context)
         val trend = data.trend.takeLast(14)
+        val totalTickets = data.byStatus.values.sum()
+        val resolvedAndClosed = (data.byStatus[TicketStatus.RESOLVED] ?: 0) + (data.byStatus[TicketStatus.CLOSED] ?: 0)
+        val ratePct = if (totalTickets > 0) (resolvedAndClosed * 100f / totalTickets) else 100f
+
         val statusItems = TicketStatus.entries.mapNotNull { s ->
             val n = data.byStatus[s] ?: 0
-            if (n > 0) Item(s.label, n.toFloat(), statusColor(s), n.toString()) else null
+            if (n > 0) Item(s.label, n.toFloat(), statusColor(s, ratePct), n.toString()) else null
         }
         val categoryItems = data.byCategory.take(7).mapIndexed { i, (k, v) -> Item(k, v.toFloat(), PALETTE[i % PALETTE.size], v.toString()) }
         val priorityCounts = data.ticketsInPeriod.groupingBy { it.priority }.eachCount()
