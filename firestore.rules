@@ -42,6 +42,16 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+    // ---------- Profile photos (small JPEG, base64) ----------
+    // Everyone signed in can see photos; users can edit their own, admins can edit any.
+    match /avatars/{uid} {
+      allow read: if signedIn();
+      allow create, update: if signedIn() && (request.auth.uid == uid || isAdmin())
+        && request.resource.data.data is string
+        && request.resource.data.data.size() <= 900000;
+      allow delete: if signedIn() && (request.auth.uid == uid || isAdmin());
+    }
+
     // ---------- Ticket number counters (one document per day: tickets-YYMMDD; tickets-YYYY was v2.0) ----------
     match /counters/{id} {
       allow read: if active();

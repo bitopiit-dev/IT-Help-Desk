@@ -21,32 +21,40 @@ object ImageCompressor {
 
     /** Square, centre-cropped 320 px JPEG (~20–40 KB) for profile photos. */
     fun avatar(context: Context, uri: Uri, side: Int = 320): ByteArray {
-        val resolver = context.contentResolver
+        val bytes = context.contentResolver.openInputStream(uri)?.use { it.readBytes() }
+            ?: error("Could not read image file")
         val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-        resolver.openInputStream(uri)?.use { BitmapFactory.decodeStream(it, null, bounds) }
-        if (bounds.outWidth <= 0 || bounds.outHeight <= 0) error("Could not read image")
+        BitmapFactory.decodeByteArray(bytes, 0, bytes.size, bounds)
+        if (bounds.outWidth <= 0 || bounds.outHeight <= 0) error("Could not read image bounds")
+
         var sample = 1
         while (minOf(bounds.outWidth, bounds.outHeight) / (sample * 2) >= side) sample *= 2
-        val decoded = resolver.openInputStream(uri)?.use {
-            BitmapFactory.decodeStream(it, null, BitmapFactory.Options().apply { inSampleSize = sample })
-        } ?: error("Could not read image")
+
+        val decoded = BitmapFactory.decodeByteArray(
+            bytes, 0, bytes.size,
+            BitmapFactory.Options().apply { inSampleSize = sample },
+        ) ?: error("Could not decode image")
+
         val rotation = runCatching {
-            resolver.openInputStream(uri)?.use { stream ->
-                when (ExifInterface(stream).getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL)) {
+            ExifInterface(bytes.inputStream()).getAttributeInt(
+                ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL,
+            ).let {
+                when (it) {
                     ExifInterface.ORIENTATION_ROTATE_90 -> 90f
                     ExifInterface.ORIENTATION_ROTATE_180 -> 180f
                     ExifInterface.ORIENTATION_ROTATE_270 -> 270f
                     else -> 0f
                 }
-            } ?: 0f
+            }
         }.getOrDefault(0f)
+
         val crop = minOf(decoded.width, decoded.height)
         val x = (decoded.width - crop) / 2
         val y = (decoded.height - crop) / 2
         val scale = side.toFloat() / crop
         val matrix = Matrix().apply {
             postScale(scale, scale)
-            postRotate(rotation)
+            if (rotation != 0f) postRotate(rotation)
         }
         val out = Bitmap.createBitmap(decoded, x, y, crop, crop, matrix, true)
         return ByteArrayOutputStream().use { stream ->
@@ -56,26 +64,31 @@ object ImageCompressor {
     }
 
     fun compress(context: Context, uri: Uri): ByteArray {
-        val resolver = context.contentResolver
+        val bytes = context.contentResolver.openInputStream(uri)?.use { it.readBytes() }
+            ?: error("Could not read image file")
         val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-        resolver.openInputStream(uri)?.use { BitmapFactory.decodeStream(it, null, bounds) }
-        if (bounds.outWidth <= 0 || bounds.outHeight <= 0) error("Could not read image")
+        BitmapFactory.decodeByteArray(bytes, 0, bytes.size, bounds)
+        if (bounds.outWidth <= 0 || bounds.outHeight <= 0) error("Could not read image bounds")
+
         var sample = 1
         while (bounds.outWidth / (sample * 2) >= SIDES[0] || bounds.outHeight / (sample * 2) >= SIDES[0]) sample *= 2
 
-        val decoded = resolver.openInputStream(uri)?.use {
-            BitmapFactory.decodeStream(it, null, BitmapFactory.Options().apply { inSampleSize = sample })
-        } ?: error("Could not read image")
+        val decoded = BitmapFactory.decodeByteArray(
+            bytes, 0, bytes.size,
+            BitmapFactory.Options().apply { inSampleSize = sample },
+        ) ?: error("Could not decode image")
 
         val rotation = runCatching {
-            resolver.openInputStream(uri)?.use { stream ->
-                when (ExifInterface(stream).getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL)) {
+            ExifInterface(bytes.inputStream()).getAttributeInt(
+                ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL,
+            ).let {
+                when (it) {
                     ExifInterface.ORIENTATION_ROTATE_90 -> 90f
                     ExifInterface.ORIENTATION_ROTATE_180 -> 180f
                     ExifInterface.ORIENTATION_ROTATE_270 -> 270f
                     else -> 0f
                 }
-            } ?: 0f
+            }
         }.getOrDefault(0f)
 
         var last = ByteArray(0)
@@ -83,7 +96,7 @@ object ImageCompressor {
             val scale = minOf(1f, side.toFloat() / maxOf(decoded.width, decoded.height))
             val matrix = Matrix().apply {
                 postScale(scale, scale)
-                postRotate(rotation)
+                if (rotation != 0f) postRotate(rotation)
             }
             val scaled = Bitmap.createBitmap(decoded, 0, 0, decoded.width, decoded.height, matrix, true)
             for (quality in intArrayOf(80, 70, 60, 50)) {

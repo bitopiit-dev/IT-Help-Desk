@@ -46,14 +46,14 @@ class UserRepositoryImpl @Inject constructor(
         avatars.document(uid).set(mapOf("data" to encoded, "updatedAt" to FieldValue.serverTimestamp())).await()
         users.document(uid).update("photoUpdatedAt", FieldValue.serverTimestamp()).await()
         noPhoto.removeAll { it.startsWith("$uid@") }
-        photoCache.put("$uid@-1", bytes)
+        photoCache.evictAll()
     }
 
     override suspend fun removePhoto(uid: String) {
         avatars.document(uid).delete().await()
         users.document(uid).update("photoUpdatedAt", null).await()
-        photoCache.remove("$uid@-1")
-        noPhoto.add("$uid@-1")
+        noPhoto.removeAll { it.startsWith("$uid@") }
+        photoCache.evictAll()
     }
 
     override suspend fun loadPhoto(uid: String, version: Long): ByteArray? {
