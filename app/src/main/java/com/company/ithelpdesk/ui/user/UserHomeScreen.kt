@@ -3,6 +3,9 @@
 
 package com.company.ithelpdesk.ui.user
 
+import android.content.Intent
+import android.net.Uri
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -110,11 +113,38 @@ fun UserHomeScreen(
                     Text("Tell IT in under a minute. We'll keep you posted.", color = Color.White.copy(alpha = 0.85f),
                         style = MaterialTheme.typography.bodyMedium)
                     Spacer(Modifier.height(16.dp))
-                    Box(
-                        Modifier.clip(CircleShape).background(Color.White).clickable { onNewTicket(null) }
-                            .padding(horizontal = 22.dp, vertical = 12.dp),
+                    val context = LocalContext.current
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                        verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        Text("＋ Raise a ticket", color = Color(0xFF7C3AED), style = MaterialTheme.typography.titleSmall)
+                        Box(
+                            Modifier
+                                .weight(1f)
+                                .clip(CircleShape)
+                                .background(Color.White)
+                                .clickable { onNewTicket(null) }
+                                .padding(horizontal = 12.dp, vertical = 12.dp),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Text("＋ Raise a ticket", color = Color(0xFF7C3AED), style = MaterialTheme.typography.titleSmall, maxLines = 1)
+                        }
+
+                        Box(
+                            Modifier
+                                .weight(1f)
+                                .clip(CircleShape)
+                                .background(Color.White)
+                                .clickable {
+                                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://chat.whatsapp.com/FsHMyUp3jnJ31IUQ7Npcwm"))
+                                    context.startActivity(intent)
+                                }
+                                .padding(horizontal = 12.dp, vertical = 12.dp),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Text("💬 WhatsApp Group", color = Color(0xFF16A34A), style = MaterialTheme.typography.titleSmall, maxLines = 1)
+                        }
                     }
                     Spacer(Modifier.height(8.dp))
                 }
