@@ -29,6 +29,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -38,7 +39,9 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Logout
@@ -198,17 +201,21 @@ fun ProfileContent(viewModel: ProfileViewModel, extra: (@Composable () -> Unit)?
                         Column(modifier = Modifier.weight(1f)) {
                             Text("Security", style = MaterialTheme.typography.titleMedium)
                             Text(
-                                "Update your account login password",
+                                "Manage your password",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
                             )
                         }
+                        Spacer(Modifier.width(8.dp))
                         OutlinedButton(
                             onClick = { showChangePasswordDialog = true },
                             shape = CircleShape,
+                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
                         ) {
-                            Icon(Icons.Outlined.Lock, contentDescription = null, modifier = Modifier.size(18.dp))
-                            Spacer(Modifier.padding(2.dp))
+                            Icon(Icons.Outlined.Lock, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Spacer(Modifier.width(6.dp))
                             Text("Change password")
                         }
                     }
