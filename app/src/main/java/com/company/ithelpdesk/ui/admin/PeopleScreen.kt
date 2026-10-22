@@ -68,6 +68,7 @@ fun PeopleScreen(viewModel: PeopleViewModel) {
     val now = rememberNow()
     var tab by rememberSaveable { mutableStateOf(PeopleTab.PENDING) }
     var confirmDecline by remember { mutableStateOf<UserProfile?>(null) }
+    var confirmResetPassword by remember { mutableStateOf<UserProfile?>(null) }
     val call = rememberPhoneCaller()
 
     LaunchedEffect(message) {
@@ -116,6 +117,7 @@ fun PeopleScreen(viewModel: PeopleViewModel) {
                             onDecline = { confirmDecline = u },
                             onRole = { viewModel.setRole(u, it) },
                             onActive = { viewModel.setActive(u, it) },
+                            onResetPassword = { confirmResetPassword = u },
                             onCall = { call(u.name, u.phone) },
                         )
                     }
@@ -138,6 +140,20 @@ fun PeopleScreen(viewModel: PeopleViewModel) {
             dismissButton = { TextButton(onClick = { confirmDecline = null }) { Text("Back") } },
         )
     }
+
+    confirmResetPassword?.let { u ->
+        AlertDialog(
+            onDismissRequest = { confirmResetPassword = null },
+            title = { Text("Reset password for ${u.firstName}?") },
+            text = { Text("A password reset link will be sent to ${u.email}. They can click the link in their email inbox to set a new password.") },
+            confirmButton = {
+                Button(onClick = { viewModel.resetPassword(u); confirmResetPassword = null }) {
+                    Text("Send reset link")
+                }
+            },
+            dismissButton = { TextButton(onClick = { confirmResetPassword = null }) { Text("Cancel") } },
+        )
+    }
 }
 
 @Composable
@@ -149,6 +165,7 @@ private fun PersonCard(
     onDecline: () -> Unit,
     onRole: (Role) -> Unit,
     onActive: (Boolean) -> Unit,
+    onResetPassword: () -> Unit,
     onCall: () -> Unit,
 ) {
     var menu by remember { mutableStateOf(false) }
@@ -189,6 +206,7 @@ private fun PersonCard(
                             } else {
                                 DropdownMenuItem(text = { Text("Make admin 🛡️") }, onClick = { menu = false; onRole(Role.ADMIN) })
                             }
+                            DropdownMenuItem(text = { Text("Reset password 🔑") }, onClick = { menu = false; onResetPassword() })
                             DropdownMenuItem(text = { Text("Block access") }, onClick = { menu = false; onActive(false) })
                         } else {
                             DropdownMenuItem(text = { Text("Restore & approve") }, onClick = { menu = false; onActive(true) })

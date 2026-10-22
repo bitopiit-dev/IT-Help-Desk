@@ -16,6 +16,7 @@ import com.company.ithelpdesk.domain.model.SlaState
 import com.company.ithelpdesk.domain.model.Ticket
 import com.company.ithelpdesk.domain.model.TicketStatus
 import com.company.ithelpdesk.domain.model.UserProfile
+import com.company.ithelpdesk.domain.repository.AuthRepository
 import com.company.ithelpdesk.domain.repository.SettingsRepository
 import com.company.ithelpdesk.domain.repository.TicketRepository
 import com.company.ithelpdesk.domain.repository.UserRepository
@@ -78,6 +79,7 @@ data class PeopleUi(
 @HiltViewModel
 class PeopleViewModel @Inject constructor(
     private val users: UserRepository,
+    private val auth: AuthRepository,
     session: SessionManager,
 ) : AdminBaseViewModel() {
     val me: UserProfile = session.requireProfile()
@@ -107,6 +109,15 @@ class PeopleViewModel @Inject constructor(
         }
         action(if (active) "${u.firstName} reactivated" else "${u.firstName} blocked") {
             if (active) users.approve(u, me) else users.setActive(u.uid, false)
+        }
+    }
+    fun resetPassword(u: UserProfile) {
+        if (u.email.isBlank()) {
+            setMessage("User has no email address.")
+            return
+        }
+        action("Password reset link sent to ${u.email}") {
+            auth.sendPasswordReset(u.email)
         }
     }
 }
