@@ -155,7 +155,7 @@ fun ProfileContent(viewModel: ProfileViewModel, extra: (@Composable () -> Unit)?
                     Text(profile.email, style = MaterialTheme.typography.bodyMedium, color = Color.White.copy(alpha = 0.85f))
                     Spacer(Modifier.height(6.dp))
                     Text(
-                        "${if (profile.role.isAdmin) "🛡️ Admin" else "🙂 User"} · member since ${formatDate(profile.createdAt)}",
+                        "${if (profile.isSuperAdmin) "👑 Super Admin" else if (profile.role.isAdmin) "🛡️ Admin" else "🙂 User"} · member since ${formatDate(profile.createdAt)}",
                         style = MaterialTheme.typography.labelMedium,
                         color = Color.White.copy(alpha = 0.85f),
                     )

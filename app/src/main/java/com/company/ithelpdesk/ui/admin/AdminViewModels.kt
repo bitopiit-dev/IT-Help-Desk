@@ -43,6 +43,7 @@ abstract class AdminBaseViewModel : ViewModel() {
     private val _message = MutableStateFlow<String?>(null)
     val message: StateFlow<String?> = _message.asStateFlow()
     fun consumeMessage() { _message.value = null }
+    protected fun setMessage(msg: String) { _message.value = msg }
 
     protected fun action(success: String? = null, block: suspend () -> Unit) {
         viewModelScope.launch {
@@ -92,11 +93,22 @@ class PeopleViewModel @Inject constructor(
         val pending = ui.value.list(PeopleTab.PENDING)
         action("${pending.size} people approved 🎉") { pending.forEach { users.approve(it, me) } }
     }
-    fun setRole(u: UserProfile, role: Role) = action("${u.firstName} is now ${role.label}") { users.setRole(u.uid, role) }
-    fun setActive(u: UserProfile, active: Boolean) =
+    fun setRole(u: UserProfile, role: Role) {
+        if (u.isSuperAdmin) {
+            setMessage("${u.firstName} is permanent Super Admin and cannot be demoted.")
+            return
+        }
+        action("${u.firstName} is now ${role.label}") { users.setRole(u.uid, role) }
+    }
+    fun setActive(u: UserProfile, active: Boolean) {
+        if (!active && u.isSuperAdmin) {
+            setMessage("${u.firstName} is permanent Super Admin and cannot be blocked.")
+            return
+        }
         action(if (active) "${u.firstName} reactivated" else "${u.firstName} blocked") {
             if (active) users.approve(u, me) else users.setActive(u.uid, false)
         }
+    }
 }
 
 // ---------- Ticket queue ----------

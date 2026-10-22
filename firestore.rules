@@ -13,7 +13,8 @@ service cloud.firestore {
     function active() {
       return signedIn() && exists(userDoc()) && me().isActive == true && me().isApproved == true;
     }
-    function isAdmin() { return active() && me().role == 'ADMIN'; }
+    function isAdmin() { return active() && (me().role == 'ADMIN' || me().role == 'SUPER_ADMIN' || me().email == 'bgl.it@bitopibd.com'); }
+    function isSuperAdmin() { return active() && (me().role == 'SUPER_ADMIN' || me().email == 'bgl.it@bitopibd.com'); }
     function changed() { return request.resource.data.diff(resource.data).affectedKeys(); }
 
     // ---------- Users ----------
@@ -30,10 +31,13 @@ service cloud.firestore {
         && request.resource.data.name.size() <= 80;
 
       // Users edit their own contact details (and FCM tokens); only admins approve or change roles.
+      // Permanent Super Admin cannot be demoted or blocked.
       allow update: if (signedIn() && request.auth.uid == uid
           && !changed().hasAny(['role', 'isApproved', 'isActive', 'email', 'createdAt',
                                 'approvedAt', 'approvedBy', 'approvedByName']))
-        || (isAdmin() && request.auth.uid != uid)
+        || (isAdmin() && request.auth.uid != uid
+            && (!exists(resource.data) || resource.data.get('role', 'USER') != 'SUPER_ADMIN')
+            && (!exists(resource.data) || resource.data.get('email', '') != 'bgl.it@bitopibd.com'))
         || (isAdmin() && request.auth.uid == uid && !changed().hasAny(['role', 'isActive', 'isApproved']));
       allow delete: if false;
     }

@@ -11,15 +11,23 @@ package com.company.ithelpdesk.domain.model
  */
 enum class Role(val label: String) {
     USER("User"),
-    ADMIN("Admin");
+    ADMIN("Admin"),
+    SUPER_ADMIN("Super Admin");
 
-    val isAdmin: Boolean get() = this == ADMIN
+    val isAdmin: Boolean get() = this == ADMIN || this == SUPER_ADMIN
+    val isSuperAdmin: Boolean get() = this == SUPER_ADMIN
 
     /** Kept for the shared workflow/dashboard logic: staff == admin. */
     val isStaff: Boolean get() = isAdmin
 
     companion object {
-        fun from(value: String?): Role = if (value == ADMIN.name) ADMIN else USER
+        const val SUPER_ADMIN_EMAIL = "bgl.it@bitopibd.com"
+
+        fun from(value: String?): Role = when (value?.uppercase()) {
+            "SUPER_ADMIN" -> SUPER_ADMIN
+            "ADMIN" -> ADMIN
+            else -> USER
+        }
     }
 }
 
@@ -40,6 +48,9 @@ data class UserProfile(
     /** When the profile photo last changed (0 = no photo). Photos live in `avatars/{uid}`. */
     val photoVersion: Long = 0L,
 ) {
+    /** Permanent Super Admin who can grant admin roles and cannot be demoted or blocked. */
+    val isSuperAdmin: Boolean get() = role == Role.SUPER_ADMIN || email.equals(Role.SUPER_ADMIN_EMAIL, ignoreCase = true)
+
     val firstName: String get() = name.trim().split(Regex("\\s+")).firstOrNull().orEmpty().ifBlank { email.substringBefore('@') }
 
     val initials: String

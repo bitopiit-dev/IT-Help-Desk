@@ -167,7 +167,7 @@ private fun PersonCard(
                     maxLines = 1, overflow = TextOverflow.Ellipsis)
                 Text(
                     listOf(
-                        if (user.role.isAdmin) "🛡️ Admin" else "",
+                        if (user.isSuperAdmin) "👑 Super Admin" else if (user.role.isAdmin) "🛡️ Admin" else "",
                         user.department,
                         user.phone,
                         if (user.employeeId.isNotBlank()) "ID ${user.employeeId}" else "",
@@ -179,7 +179,7 @@ private fun PersonCard(
             if (!isMe && user.phone.isNotBlank()) {
                 CallButton(onClick = onCall, contentDescription = "Call ${user.name}")
             }
-            if (!isMe && !user.isPending) {
+            if (!isMe && !user.isPending && !user.isSuperAdmin) {
                 Box {
                     IconButton(onClick = { menu = true }) { Icon(Icons.Default.MoreVert, "Options for ${user.name}") }
                     DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {

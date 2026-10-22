@@ -15,7 +15,8 @@ import java.time.Instant
 
 class RolesAndNotificationsTest {
 
-    @Test fun `only ADMIN maps to admin, legacy roles become user`() {
+    @Test fun `only ADMIN and SUPER_ADMIN map to admin, legacy roles become user`() {
+        assertEquals(Role.SUPER_ADMIN, Role.from("SUPER_ADMIN"))
         assertEquals(Role.ADMIN, Role.from("ADMIN"))
         assertEquals(Role.USER, Role.from("USER"))
         assertEquals(Role.USER, Role.from("EMPLOYEE"))
