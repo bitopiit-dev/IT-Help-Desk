@@ -5,6 +5,13 @@ package com.company.ithelpdesk.ui.user
 
 import android.content.Intent
 import android.net.Uri
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -114,6 +121,26 @@ fun UserHomeScreen(
                         style = MaterialTheme.typography.bodyMedium)
                     Spacer(Modifier.height(16.dp))
                     val context = LocalContext.current
+                    val blinkTransition = rememberInfiniteTransition(label = "raise_ticket_blink")
+                    val blinkAlpha by blinkTransition.animateFloat(
+                        initialValue = 1f,
+                        targetValue = 0.5f,
+                        animationSpec = infiniteRepeatable(
+                            animation = tween(durationMillis = 750, easing = LinearEasing),
+                            repeatMode = RepeatMode.Reverse,
+                        ),
+                        label = "alpha",
+                    )
+                    val blinkScale by blinkTransition.animateFloat(
+                        initialValue = 1f,
+                        targetValue = 1.05f,
+                        animationSpec = infiniteRepeatable(
+                            animation = tween(durationMillis = 750, easing = LinearEasing),
+                            repeatMode = RepeatMode.Reverse,
+                        ),
+                        label = "scale",
+                    )
+
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(10.dp),
@@ -122,6 +149,11 @@ fun UserHomeScreen(
                         Box(
                             Modifier
                                 .weight(1f)
+                                .graphicsLayer(
+                                    scaleX = blinkScale,
+                                    scaleY = blinkScale,
+                                    alpha = blinkAlpha,
+                                )
                                 .clip(CircleShape)
                                 .background(Color.White)
                                 .clickable { onNewTicket(null) }
