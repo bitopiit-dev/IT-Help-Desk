@@ -65,11 +65,17 @@ import com.company.ithelpdesk.ui.components.AppCard
 import com.company.ithelpdesk.ui.components.EmptyState
 import com.company.ithelpdesk.ui.components.GradientButton
 import com.company.ithelpdesk.ui.components.LoadingBox
+import com.company.ithelpdesk.ui.components.ShareAppDialog
 import com.company.ithelpdesk.ui.components.categoryEmoji
 
 /** "Setup" tab: links to the configuration pages and the admin's own profile. */
 @Composable
 fun AdminMoreScreen(onCategories: () -> Unit, onDepartments: () -> Unit, onSla: () -> Unit, onProfile: () -> Unit) {
+    var showShareDialog by remember { mutableStateOf(false) }
+    if (showShareDialog) {
+        ShareAppDialog(onDismiss = { showShareDialog = false })
+    }
+
     Column(Modifier.fillMaxSize().statusBarsPadding().verticalScroll(rememberScrollState()).padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Text("Setup", style = MaterialTheme.typography.headlineMedium)
@@ -78,6 +84,7 @@ fun AdminMoreScreen(onCategories: () -> Unit, onDepartments: () -> Unit, onSla: 
         SetupRow("🗂️", "Categories", "What users can report and the sub-types", onCategories)
         SetupRow("🏢", "Departments", "Shown on the sign-up form", onDepartments)
         SetupRow("⏱️", "SLA targets", "Response and fix times per priority", onSla)
+        SetupRow("📲", "Share App & QR Code", "Scan QR code or share download link for BGL-IT Help") { showShareDialog = true }
         SetupRow("🧑‍💻", "My profile", "Your details and sign out", onProfile)
         Spacer(Modifier.height(8.dp))
         AppCard {

@@ -48,6 +48,7 @@ import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material.icons.outlined.Lock
+import androidx.compose.material.icons.outlined.QrCodeScanner
 import androidx.compose.material.icons.outlined.Save
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -78,6 +79,7 @@ import com.company.ithelpdesk.ui.components.AppCard
 import com.company.ithelpdesk.ui.components.UserAvatar
 import com.company.ithelpdesk.ui.components.GradientButton
 import com.company.ithelpdesk.ui.components.GradientHero
+import com.company.ithelpdesk.ui.components.ShareAppDialog
 import com.company.ithelpdesk.util.formatDate
 
 /** Profile editor used by both apps (each wraps it in its own theme). */
@@ -217,6 +219,38 @@ fun ProfileContent(viewModel: ProfileViewModel, extra: (@Composable () -> Unit)?
                             Icon(Icons.Outlined.Lock, contentDescription = null, modifier = Modifier.size(16.dp))
                             Spacer(Modifier.width(6.dp))
                             Text("Change password")
+                        }
+                    }
+                }
+
+                var showShareDialog by remember { mutableStateOf(false) }
+                if (showShareDialog) {
+                    ShareAppDialog(onDismiss = { showShareDialog = false })
+                }
+
+                AppCard {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text("Share App", style = MaterialTheme.typography.titleMedium)
+                            Text(
+                                "Show QR code or share download link",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                        Spacer(Modifier.width(8.dp))
+                        OutlinedButton(
+                            onClick = { showShareDialog = true },
+                            shape = CircleShape,
+                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
+                        ) {
+                            Icon(Icons.Outlined.QrCodeScanner, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Spacer(Modifier.width(6.dp))
+                            Text("QR Code")
                         }
                     }
                 }

@@ -44,6 +44,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -67,6 +68,7 @@ import com.company.ithelpdesk.ui.components.GradientHero
 import com.company.ithelpdesk.ui.components.LoadingBox
 import com.company.ithelpdesk.ui.components.SkeletonList
 import com.company.ithelpdesk.ui.components.SectionTitle
+import com.company.ithelpdesk.ui.components.ShareAppDialog
 import com.company.ithelpdesk.ui.components.StatTile
 import com.company.ithelpdesk.ui.components.UserTicketCard
 import com.company.ithelpdesk.ui.theme.LocalBrand
@@ -141,22 +143,27 @@ fun UserHomeScreen(
                         label = "scale",
                     )
 
+                    var showShareDialog by remember { mutableStateOf(false) }
+                    if (showShareDialog) {
+                        ShareAppDialog(onDismiss = { showShareDialog = false })
+                    }
+
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Box(
                             Modifier
-                                .weight(1f)
+                                .weight(1.1f)
                                 .clip(CircleShape)
                                 .background(Color.White)
                                 .clickable { onNewTicket(null) }
-                                .padding(horizontal = 12.dp, vertical = 12.dp),
+                                .padding(horizontal = 8.dp, vertical = 12.dp),
                             contentAlignment = Alignment.Center,
                         ) {
                             Text(
-                                "＋ Raise a ticket",
+                                "＋ Ticket",
                                 color = Color(0xFF7C3AED),
                                 style = MaterialTheme.typography.titleSmall,
                                 maxLines = 1,
@@ -177,10 +184,22 @@ fun UserHomeScreen(
                                     val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://chat.whatsapp.com/FsHMyUp3jnJ31IUQ7Npcwm"))
                                     context.startActivity(intent)
                                 }
-                                .padding(horizontal = 12.dp, vertical = 12.dp),
+                                .padding(horizontal = 8.dp, vertical = 12.dp),
                             contentAlignment = Alignment.Center,
                         ) {
-                            Text("💬 WhatsApp Group", color = Color(0xFF16A34A), style = MaterialTheme.typography.titleSmall, maxLines = 1)
+                            Text("💬 WhatsApp", color = Color(0xFF16A34A), style = MaterialTheme.typography.titleSmall, maxLines = 1)
+                        }
+
+                        Box(
+                            Modifier
+                                .weight(1f)
+                                .clip(CircleShape)
+                                .background(Color.White)
+                                .clickable { showShareDialog = true }
+                                .padding(horizontal = 8.dp, vertical = 12.dp),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Text("📲 QR Code", color = Color(0xFF0284C7), style = MaterialTheme.typography.titleSmall, maxLines = 1)
                         }
                     }
                     Spacer(Modifier.height(8.dp))
