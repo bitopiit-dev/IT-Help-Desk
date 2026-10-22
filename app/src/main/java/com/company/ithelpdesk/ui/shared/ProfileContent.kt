@@ -38,15 +38,28 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Logout
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material.icons.outlined.Save
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -173,6 +186,102 @@ fun ProfileContent(viewModel: ProfileViewModel, extra: (@Composable () -> Unit)?
                     GradientButton("Save changes", onClick = viewModel::save, loading = saving, icon = Icons.Outlined.Save,
                         modifier = Modifier.fillMaxWidth())
                 }
+
+                var showChangePasswordDialog by remember { mutableStateOf(false) }
+
+                AppCard {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text("Security", style = MaterialTheme.typography.titleMedium)
+                            Text(
+                                "Update your account login password",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                        OutlinedButton(
+                            onClick = { showChangePasswordDialog = true },
+                            shape = CircleShape,
+                        ) {
+                            Icon(Icons.Outlined.Lock, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Spacer(Modifier.padding(2.dp))
+                            Text("Change password")
+                        }
+                    }
+                }
+
+                if (showChangePasswordDialog) {
+                    var newPassword by rememberSaveable { mutableStateOf("") }
+                    var confirmPassword by rememberSaveable { mutableStateOf("") }
+                    var passVisible by rememberSaveable { mutableStateOf(false) }
+
+                    AlertDialog(
+                        onDismissRequest = { showChangePasswordDialog = false },
+                        title = { Text("Change password 🔒") },
+                        text = {
+                            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                                Text("Enter a new password for ${profile.email}:", style = MaterialTheme.typography.bodyMedium)
+                                OutlinedTextField(
+                                    value = newPassword,
+                                    onValueChange = { newPassword = it },
+                                    label = { Text("New password (6+ chars)") },
+                                    leadingIcon = { Icon(Icons.Outlined.Lock, contentDescription = null) },
+                                    trailingIcon = {
+                                        IconButton(onClick = { passVisible = !passVisible }) {
+                                            Icon(if (passVisible) Icons.Filled.VisibilityOff else Icons.Filled.Visibility, null)
+                                        }
+                                    },
+                                    singleLine = true,
+                                    visualTransformation = if (passVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                                    shape = MaterialTheme.shapes.medium,
+                                    modifier = Modifier.fillMaxWidth(),
+                                )
+                                OutlinedTextField(
+                                    value = confirmPassword,
+                                    onValueChange = { confirmPassword = it },
+                                    label = { Text("Confirm new password") },
+                                    leadingIcon = { Icon(Icons.Outlined.Lock, contentDescription = null) },
+                                    singleLine = true,
+                                    visualTransformation = if (passVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                                    shape = MaterialTheme.shapes.medium,
+                                    modifier = Modifier.fillMaxWidth(),
+                                )
+                                TextButton(
+                                    onClick = {
+                                        viewModel.sendSelfPasswordReset()
+                                        showChangePasswordDialog = false
+                                    },
+                                    modifier = Modifier.align(Alignment.End),
+                                ) {
+                                    Text("Or send reset link to my email")
+                                }
+                            }
+                        },
+                        confirmButton = {
+                            Button(
+                                onClick = {
+                                    viewModel.changePassword(newPassword, confirmPassword)
+                                    showChangePasswordDialog = false
+                                },
+                                enabled = newPassword.isNotBlank() && confirmPassword.isNotBlank(),
+                            ) {
+                                Text("Update password")
+                            }
+                        },
+                        dismissButton = {
+                            TextButton(onClick = { showChangePasswordDialog = false }) {
+                                Text("Cancel")
+                            }
+                        },
+                    )
+                }
+
                 OutlinedButton(
                     onClick = viewModel::signOut,
                     shape = RoundedCornerShape(18.dp),

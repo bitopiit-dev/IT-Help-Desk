@@ -9,6 +9,7 @@ import com.company.ithelpdesk.data.SessionManager
 import com.company.ithelpdesk.data.SessionState
 import com.company.ithelpdesk.domain.model.Department
 import com.company.ithelpdesk.domain.model.UserProfile
+import com.company.ithelpdesk.domain.repository.AuthRepository
 import com.company.ithelpdesk.domain.repository.SettingsRepository
 import com.company.ithelpdesk.domain.repository.UserRepository
 import com.company.ithelpdesk.ui.auth.ProfileFormState
@@ -29,6 +30,7 @@ import javax.inject.Inject
 class ProfileViewModel @Inject constructor(
     private val session: SessionManager,
     private val users: UserRepository,
+    private val auth: AuthRepository,
     settings: SettingsRepository,
 ) : ViewModel() {
 
@@ -65,6 +67,41 @@ class ProfileViewModel @Inject constructor(
                 _message.value = e.userMessage()
             } finally {
                 _saving.value = false
+            }
+        }
+    }
+
+    fun changePassword(newPass: String, confirmPass: String) {
+        when {
+            newPass.length < 6 -> {
+                _message.value = "Password needs at least 6 characters."
+                return
+            }
+            newPass != confirmPass -> {
+                _message.value = "Passwords don't match."
+                return
+            }
+        }
+        viewModelScope.launch {
+            _saving.value = true
+            try {
+                auth.updatePassword(newPass)
+                _message.value = "Password updated successfully 🔒"
+            } catch (e: Exception) {
+                _message.value = e.userMessage()
+            } finally {
+                _saving.value = false
+            }
+        }
+    }
+
+    fun sendSelfPasswordReset() {
+        viewModelScope.launch {
+            try {
+                auth.sendPasswordReset(profile.value.email)
+                _message.value = "Password reset link sent to ${profile.value.email} 📬"
+            } catch (e: Exception) {
+                _message.value = e.userMessage()
             }
         }
     }

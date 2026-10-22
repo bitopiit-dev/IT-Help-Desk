@@ -44,5 +44,10 @@ class AuthRepositoryImpl @Inject constructor(
         auth.sendPasswordResetEmail(email.trim()).await()
     }
 
+    override suspend fun updatePassword(newPassword: String) {
+        val user = checkNotNull(auth.currentUser) { "Not signed in" }
+        user.updatePassword(newPassword).await()
+    }
+
     override fun signOut() = auth.signOut()
 }
