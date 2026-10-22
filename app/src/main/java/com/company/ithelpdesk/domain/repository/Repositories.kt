@@ -40,6 +40,7 @@ interface UserRepository {
     fun observeAdmins(): Flow<List<UserProfile>>
     suspend fun createProfile(profile: UserProfile)
     suspend fun updateOwnProfile(uid: String, name: String, department: String, phone: String, location: String, employeeId: String)
+    suspend fun updateUserProfile(uid: String, name: String, employeeId: String, department: String, phone: String, location: String, extraFields: Map<String, String>)
     suspend fun approve(user: UserProfile, admin: UserProfile)
     suspend fun decline(user: UserProfile, admin: UserProfile)
     suspend fun setRole(uid: String, role: Role)

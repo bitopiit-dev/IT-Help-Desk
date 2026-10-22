@@ -47,6 +47,8 @@ data class UserProfile(
     val approvedByName: String = "",
     /** When the profile photo last changed (0 = no photo). Photos live in `avatars/{uid}`. */
     val photoVersion: Long = 0L,
+    /** Custom key-value sub-sections added by admins (e.g. "Designation" -> "Sr. Executive"). */
+    val extraFields: Map<String, String> = emptyMap(),
 ) {
     /** Permanent Super Admin who can grant admin roles and cannot be demoted or blocked. */
     val isSuperAdmin: Boolean get() = role == Role.SUPER_ADMIN || email.equals(Role.SUPER_ADMIN_EMAIL, ignoreCase = true)

@@ -41,6 +41,11 @@ private fun Any?.toAttachments(): List<Attachment> =
 
 fun DocumentSnapshot.toUserProfile(): UserProfile? {
     if (!exists()) return null
+    @Suppress("UNCHECKED_CAST")
+    val extraMap = (get("extraFields") as? Map<String, *>)
+        ?.mapNotNull { (k, v) -> if (v != null) k to v.toString() else null }
+        ?.toMap() ?: emptyMap()
+
     return UserProfile(
         uid = id,
         name = getString("name") ?: "",
@@ -56,6 +61,7 @@ fun DocumentSnapshot.toUserProfile(): UserProfile? {
         approvedAt = millis("approvedAt"),
         approvedByName = getString("approvedByName") ?: "",
         photoVersion = millis("photoUpdatedAt") ?: 0L,
+        extraFields = extraMap,
     )
 }
 

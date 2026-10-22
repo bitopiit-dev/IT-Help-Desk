@@ -3,6 +3,12 @@
 
 package com.company.ithelpdesk.ui.admin
 
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -69,6 +75,7 @@ fun PeopleScreen(viewModel: PeopleViewModel) {
     var tab by rememberSaveable { mutableStateOf(PeopleTab.PENDING) }
     var confirmDecline by remember { mutableStateOf<UserProfile?>(null) }
     var confirmResetPassword by remember { mutableStateOf<UserProfile?>(null) }
+    var editUser by remember { mutableStateOf<UserProfile?>(null) }
     val call = rememberPhoneCaller()
 
     LaunchedEffect(message) {
@@ -118,6 +125,7 @@ fun PeopleScreen(viewModel: PeopleViewModel) {
                             onRole = { viewModel.setRole(u, it) },
                             onActive = { viewModel.setActive(u, it) },
                             onResetPassword = { confirmResetPassword = u },
+                            onEditProfile = { editUser = u },
                             onCall = { call(u.name, u.phone) },
                         )
                     }
@@ -154,6 +162,17 @@ fun PeopleScreen(viewModel: PeopleViewModel) {
             dismissButton = { TextButton(onClick = { confirmResetPassword = null }) { Text("Cancel") } },
         )
     }
+
+    editUser?.let { u ->
+        EditUserDialog(
+            user = u,
+            onDismiss = { editUser = null },
+            onSave = { name, employeeId, department, phone, location, extraFields ->
+                viewModel.updateUserProfile(u, name, employeeId, department, phone, location, extraFields)
+                editUser = null
+            },
+        )
+    }
 }
 
 @Composable
@@ -166,10 +185,14 @@ private fun PersonCard(
     onRole: (Role) -> Unit,
     onActive: (Boolean) -> Unit,
     onResetPassword: () -> Unit,
+    onEditProfile: () -> Unit,
     onCall: () -> Unit,
 ) {
     var menu by remember { mutableStateOf(false) }
-    AppCard(padding = 14.dp) {
+    AppCard(
+        padding = 14.dp,
+        modifier = Modifier.clickable(enabled = !user.isPending) { onEditProfile() },
+    ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             UserAvatar(user.uid, user.initials, size = 46.dp, photoVersion = user.photoVersion)
             Spacer(Modifier.width(12.dp))
@@ -180,36 +203,55 @@ private fun PersonCard(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
-                Text(user.email, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(
+                    user.email,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
                 Text(
                     listOf(
                         if (user.isSuperAdmin) "👑 Super Admin" else if (user.role.isAdmin) "🛡️ Admin" else "",
                         user.department,
                         user.phone,
                         if (user.employeeId.isNotBlank()) "ID ${user.employeeId}" else "",
+                        if (user.location.isNotBlank()) user.location else "",
                     ).filter { it.isNotBlank() }.joinToString(" · "),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
+                if (user.extraFields.isNotEmpty()) {
+                    Spacer(Modifier.height(2.dp))
+                    Text(
+                        user.extraFields.entries.joinToString(" · ") { "${it.key}: ${it.value}" },
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.primary,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
             }
             if (!isMe && user.phone.isNotBlank()) {
                 CallButton(onClick = onCall, contentDescription = "Call ${user.name}")
             }
-            if (!isMe && !user.isPending && !user.isSuperAdmin) {
+            if (!user.isPending) {
                 Box {
                     IconButton(onClick = { menu = true }) { Icon(Icons.Default.MoreVert, "Options for ${user.name}") }
                     DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
-                        if (user.isActive) {
-                            if (user.role.isAdmin) {
-                                DropdownMenuItem(text = { Text("Make regular user") }, onClick = { menu = false; onRole(Role.USER) })
+                        DropdownMenuItem(text = { Text("✏️ Edit info & sub-sections") }, onClick = { menu = false; onEditProfile() })
+                        if (!isMe && !user.isSuperAdmin) {
+                            if (user.isActive) {
+                                if (user.role.isAdmin) {
+                                    DropdownMenuItem(text = { Text("Make regular user") }, onClick = { menu = false; onRole(Role.USER) })
+                                } else {
+                                    DropdownMenuItem(text = { Text("Make admin 🛡️") }, onClick = { menu = false; onRole(Role.ADMIN) })
+                                }
+                                DropdownMenuItem(text = { Text("Reset password 🔑") }, onClick = { menu = false; onResetPassword() })
+                                DropdownMenuItem(text = { Text("Block access") }, onClick = { menu = false; onActive(false) })
                             } else {
-                                DropdownMenuItem(text = { Text("Make admin 🛡️") }, onClick = { menu = false; onRole(Role.ADMIN) })
+                                DropdownMenuItem(text = { Text("Restore & approve") }, onClick = { menu = false; onActive(true) })
                             }
-                            DropdownMenuItem(text = { Text("Reset password 🔑") }, onClick = { menu = false; onResetPassword() })
-                            DropdownMenuItem(text = { Text("Block access") }, onClick = { menu = false; onActive(false) })
-                        } else {
-                            DropdownMenuItem(text = { Text("Restore & approve") }, onClick = { menu = false; onActive(true) })
                         }
                     }
                 }
@@ -233,5 +275,168 @@ private fun PersonCard(
                 OutlinedButton(onClick = onDecline, shape = CircleShape, modifier = Modifier.weight(1f)) { Text("Decline") }
             }
         }
+    }
+}
+
+@Composable
+private fun EditUserDialog(
+    user: UserProfile,
+    onDismiss: () -> Unit,
+    onSave: (name: String, employeeId: String, department: String, phone: String, location: String, extraFields: Map<String, String>) -> Unit,
+) {
+    var name by rememberSaveable { mutableStateOf(user.name) }
+    var employeeId by rememberSaveable { mutableStateOf(user.employeeId) }
+    var department by rememberSaveable { mutableStateOf(user.department) }
+    var phone by rememberSaveable { mutableStateOf(user.phone) }
+    var location by rememberSaveable { mutableStateOf(user.location) }
+
+    var extraMap by remember { mutableStateOf(user.extraFields.toMutableMap()) }
+    var showAddFieldDialog by remember { mutableStateOf(false) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Edit Profile: ${user.firstName}") },
+        text = {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    label = { Text("Full Name") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                OutlinedTextField(
+                    value = employeeId,
+                    onValueChange = { employeeId = it },
+                    label = { Text("Employee ID") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                OutlinedTextField(
+                    value = department,
+                    onValueChange = { department = it },
+                    label = { Text("Department") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                OutlinedTextField(
+                    value = phone,
+                    onValueChange = { phone = it },
+                    label = { Text("Phone Number") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                OutlinedTextField(
+                    value = location,
+                    onValueChange = { location = it },
+                    label = { Text("Location / Desk") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+
+                Text(
+                    "Custom Sub-sections / Extra Info",
+                    style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(top = 8.dp),
+                )
+
+                extraMap.forEach { (key, valStr) ->
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        OutlinedTextField(
+                            value = valStr,
+                            onValueChange = { newV ->
+                                extraMap = extraMap.toMutableMap().apply { put(key, newV) }
+                            },
+                            label = { Text(key) },
+                            singleLine = true,
+                            modifier = Modifier.weight(1f),
+                        )
+                        IconButton(onClick = {
+                            extraMap = extraMap.toMutableMap().apply { remove(key) }
+                        }) {
+                            Icon(Icons.Outlined.Delete, contentDescription = "Delete $key", tint = MaterialTheme.colorScheme.error)
+                        }
+                    }
+                }
+
+                OutlinedButton(
+                    onClick = { showAddFieldDialog = true },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = CircleShape,
+                ) {
+                    Icon(Icons.Default.Add, contentDescription = null)
+                    Spacer(Modifier.width(6.dp))
+                    Text("Add custom sub-section")
+                }
+            }
+        },
+        confirmButton = {
+            Button(onClick = {
+                onSave(name, employeeId, department, phone, location, extraMap)
+            }) {
+                Text("Save changes")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("Cancel") }
+        },
+    )
+
+    if (showAddFieldDialog) {
+        var newKey by rememberSaveable { mutableStateOf("") }
+        var newVal by rememberSaveable { mutableStateOf("") }
+
+        AlertDialog(
+            onDismissRequest = { showAddFieldDialog = false },
+            title = { Text("Add Custom Sub-section") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Text(
+                        "Enter a sub-section title (e.g. Designation, Shift, Emergency Contact, Laptop Serial) and value:",
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                    OutlinedTextField(
+                        value = newKey,
+                        onValueChange = { newKey = it },
+                        label = { Text("Sub-section Title (e.g. Designation)") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    OutlinedTextField(
+                        value = newVal,
+                        onValueChange = { newVal = it },
+                        label = { Text("Value (e.g. Sr. Executive)") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        if (newKey.isNotBlank()) {
+                            extraMap = extraMap.toMutableMap().apply { put(newKey.trim(), newVal.trim()) }
+                        }
+                        showAddFieldDialog = false
+                    },
+                    enabled = newKey.isNotBlank(),
+                ) {
+                    Text("Add")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showAddFieldDialog = false }) { Text("Cancel") }
+            },
+        )
     }
 }

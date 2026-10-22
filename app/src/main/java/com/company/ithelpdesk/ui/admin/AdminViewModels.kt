@@ -120,6 +120,19 @@ class PeopleViewModel @Inject constructor(
             auth.sendPasswordReset(u.email)
         }
     }
+    fun updateUserProfile(
+        u: UserProfile,
+        name: String,
+        employeeId: String,
+        department: String,
+        phone: String,
+        location: String,
+        extraFields: Map<String, String>,
+    ) {
+        action("Profile updated for ${name.ifBlank { u.firstName }} ✅") {
+            users.updateUserProfile(u.uid, name, employeeId, department, phone, location, extraFields)
+        }
+    }
 }
 
 // ---------- Ticket queue ----------

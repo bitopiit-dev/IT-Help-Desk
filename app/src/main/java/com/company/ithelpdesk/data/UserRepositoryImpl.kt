@@ -109,6 +109,27 @@ class UserRepositoryImpl @Inject constructor(
         ).awaitOrQueued()
     }
 
+    override suspend fun updateUserProfile(
+        uid: String,
+        name: String,
+        employeeId: String,
+        department: String,
+        phone: String,
+        location: String,
+        extraFields: Map<String, String>,
+    ) {
+        users.document(uid).update(
+            mapOf(
+                "name" to name.trim(),
+                "employeeId" to employeeId.trim(),
+                "department" to department.trim(),
+                "phone" to phone.trim(),
+                "location" to location.trim(),
+                "extraFields" to extraFields,
+            ),
+        ).await()
+    }
+
     override suspend fun approve(user: UserProfile, admin: UserProfile) {
         users.document(user.uid).update(
             mapOf(
