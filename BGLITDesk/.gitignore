@@ -1,0 +1,22 @@
+*.iml
+.gradle/
+/local.properties
+/.idea/
+.DS_Store
+/build/
+/app/build/
+/captures/
+.externalNativeBuild/
+.cxx/
+*.keystore
+*.jks
+keystore.properties
+# Firebase config contains project identifiers - each developer adds their own
+app/google-services.json
+.firebaserc
+functions/node_modules/
+functions/lib/
+rules-tests/node_modules/
+firebase-debug.log
+firestore-debug.log
+ui-debug.log

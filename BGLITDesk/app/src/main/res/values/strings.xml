@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">BGLITDesk</string>
+    <string name="notification_channel_tickets">Ticket updates</string>
+    <string name="notification_channel_tickets_desc">Sign-up approvals, new tickets, status changes and messages</string>
+</resources>

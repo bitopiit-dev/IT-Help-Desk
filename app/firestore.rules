@@ -1,0 +1,179 @@
+// © 2026 Khondaker Arifur Rahman. All Rights Reserved.
+rules_version = '2';
+
+// BGLITDesk security rules — works on the free Spark plan (no Cloud Functions needed).
+//  - Anyone can sign up with ANY email address; new accounts start as unapproved USERs.
+//  - Only an approved, active ADMIN can approve people, change roles or work tickets.
+//  - Roles are read from users/{uid} on every request, so a modified app cannot fake them.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() { return request.auth != null; }
+    function userDoc() { return /databases/$(database)/documents/users/$(request.auth.uid); }
+    function me() { return get(userDoc()).data; }
+    function active() {
+      return signedIn() && exists(userDoc()) && me().isActive == true && me().isApproved == true;
+    }
+    function isAdmin() { return active() && me().role == 'ADMIN'; }
+    function changed() { return request.resource.data.diff(resource.data).affectedKeys(); }
+
+    // ---------- Users ----------
+    match /users/{uid} {
+      allow read: if signedIn() && (request.auth.uid == uid || isAdmin());
+
+      // Self sign-up with any email: always an unapproved USER.
+      allow create: if signedIn() && request.auth.uid == uid
+        && request.resource.data.email == request.auth.token.email
+        && request.resource.data.role == 'USER'
+        && request.resource.data.isApproved == false
+        && request.resource.data.isActive == true
+        && request.resource.data.name is string && request.resource.data.name.size() > 0
+        && request.resource.data.name.size() <= 80;
+
+      // Users edit their own contact details (and FCM tokens); only admins approve or change roles.
+      allow update: if (signedIn() && request.auth.uid == uid
+          && !changed().hasAny(['role', 'isApproved', 'isActive', 'email', 'createdAt',
+                                'approvedAt', 'approvedBy', 'approvedByName']))
+        || (isAdmin() && request.auth.uid != uid)
+        || (isAdmin() && request.auth.uid == uid && !changed().hasAny(['role', 'isActive', 'isApproved']));
+      allow delete: if false;
+    }
+
+    // ---------- Profile photos (small JPEG, base64) ----------
+    // Everyone signed in can see photos; only the owner can change or remove theirs.
+    match /avatars/{uid} {
+      allow read: if signedIn();
+      allow create, update: if signedIn() && request.auth.uid == uid
+        && request.resource.data.data is string
+        && request.resource.data.data.size() < 300000;
+      allow delete: if signedIn() && request.auth.uid == uid;
+    }
+
+    // ---------- Ticket number counters (one document per year) ----------
+    match /counters/{id} {
+      allow read: if active();
+      allow create: if active() && id.matches('tickets-[0-9]{4}') && request.resource.data.value == 1;
+      allow update: if active() && request.resource.data.value == resource.data.value + 1
+        && request.resource.data.keys().hasOnly(['value']);
+      allow delete: if false;
+    }
+
+    // ---------- Tickets ----------
+    match /tickets/{ticketId} {
+      function isRequester() { return active() && resource.data.requesterId == request.auth.uid; }
+      function requesterFields() {
+        return ['status', 'closedAt', 'resolvedAt', 'reopenedAt', 'reopenCount', 'rating', 'ratingComment',
+                'ratedAt', 'updatedAt', 'lastChangedBy', 'lastChangedByName', 'onHoldSince', 'onHoldTotalMs'];
+      }
+
+      allow read: if isAdmin() || isRequester();
+
+      allow create: if active()
+        && request.resource.data.requesterId == request.auth.uid
+        && request.resource.data.status == 'NEW'
+        && request.resource.data.get('assigneeId', null) == null
+        && (request.resource.data.ticketNumber == ''
+            || request.resource.data.ticketNumber.matches('BGL-[0-9]{6}-[0-9]{4,}')
+            || request.resource.data.ticketNumber.matches('BGL-[0-9]{4}-[0-9]{4,}'))
+        && request.resource.data.title is string && request.resource.data.title.size() > 0
+        && request.resource.data.title.size() <= 120
+        && request.resource.data.description is string && request.resource.data.description.size() <= 4000
+        && request.resource.data.priority in ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL']
+        && request.resource.data.attachments.size() <= 5;
+
+      allow update: if
+        // Admins: anything except identity and SLA due dates.
+        (isAdmin()
+          && request.resource.data.requesterId == resource.data.requesterId
+          && request.resource.data.ticketNumber == resource.data.ticketNumber
+          && !changed().hasAny(['slaResponseDueAt', 'slaResolveDueAt', 'createdAt']))
+        ||
+        // Requester: cancel (before work), confirm, reopen, rate.
+        (isRequester()
+          && changed().hasOnly(requesterFields())
+          && (
+            request.resource.data.status == resource.data.status
+            || (request.resource.data.status == 'CANCELLED' && resource.data.status in ['NEW', 'ASSIGNED'])
+            || (request.resource.data.status == 'CLOSED' && resource.data.status == 'RESOLVED')
+            || (request.resource.data.status == 'REOPENED' && resource.data.status in ['RESOLVED', 'CLOSED'])
+          )
+          && (!changed().hasAny(['rating']) || (request.resource.data.rating is int
+                && request.resource.data.rating >= 1 && request.resource.data.rating <= 5)));
+
+      allow delete: if false;
+
+      function ticketData() { return get(/databases/$(database)/documents/tickets/$(ticketId)).data; }
+      function isTicketRequester() { return active() && ticketData().requesterId == request.auth.uid; }
+
+      // Photos, stored inside Firestore as compressed JPEG (base64). Written before the ticket exists,
+      // so the uploader can always read their own; the requester and admins can read the rest.
+      match /images/{imageId} {
+        allow read: if active() && (resource.data.createdBy == request.auth.uid || isAdmin() || isTicketRequester());
+        allow create: if active()
+          && request.resource.data.createdBy == request.auth.uid
+          && request.resource.data.data is string
+          && request.resource.data.data.size() < 1000000;
+        allow update, delete: if false;
+      }
+
+      match /comments/{commentId} {
+        // Requesters must query with isInternal == false; internal notes are admin-only.
+        allow read: if isAdmin() || (isTicketRequester() && resource.data.isInternal == false);
+        allow create: if request.resource.data.authorId == request.auth.uid
+          && request.resource.data.text is string && request.resource.data.text.size() <= 2000
+          && (isAdmin() || (isTicketRequester() && request.resource.data.isInternal == false));
+        allow update, delete: if false;
+      }
+
+      match /statusHistory/{entryId} {
+        allow read: if isAdmin() || isTicketRequester();
+        allow create: if request.resource.data.changedBy == request.auth.uid && (isAdmin() || isTicketRequester());
+        allow update, delete: if false;
+      }
+    }
+
+    // ---------- In-app notifications (written by the app, no Cloud Functions) ----------
+    match /notifications/{id} {
+      allow read: if signedIn() && (resource.data.audience == request.auth.uid || isAdmin());
+
+      allow create: if signedIn()
+        && request.resource.data.createdBy == request.auth.uid
+        && request.resource.data.audience is string
+        && request.resource.data.title is string && request.resource.data.title.size() <= 140
+        && request.resource.data.body is string && request.resource.data.body.size() <= 300
+        && request.resource.data.readBy == []
+        && (active()
+            // A brand-new (unapproved) user may only announce their own sign-up to the admins.
+            || (request.resource.data.kind == 'SIGNUP' && request.resource.data.audience == 'ADMINS'));
+
+      // Marking as read: you may only add yourself to readBy.
+      allow update: if signedIn()
+        && (resource.data.audience == request.auth.uid || isAdmin())
+        && changed().hasOnly(['readBy'])
+        && request.resource.data.readBy.hasAll(resource.data.readBy)
+        && request.resource.data.readBy.toSet().difference(resource.data.readBy.toSet()).hasOnly([request.auth.uid]);
+      allow delete: if false;
+    }
+
+    // ---------- Configuration ----------
+    match /categories/{id} {
+      allow read: if signedIn();
+      allow write: if isAdmin();
+    }
+    // Readable before sign-in so the sign-up form can list departments.
+    match /departments/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    match /settings/{id} {
+      allow read: if signedIn();
+      allow write: if isAdmin();
+    }
+
+    // Legacy, from the Cloud Functions build.
+    match /statsDaily/{day} {
+      allow read: if isAdmin();
+      allow write: if false;
+    }
+  }
+}

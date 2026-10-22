@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">BGL-IT Help</string>
+    <string name="notification_channel_tickets">BGL-IT Help alerts</string>
+    <string name="notification_channel_tickets_desc">Sign-up approvals, new tickets, status changes and messages</string>
+</resources>

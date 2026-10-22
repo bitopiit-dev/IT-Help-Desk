@@ -1,0 +1,14 @@
+<resources>
+    <style name="Theme.ITHelpdesk" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:windowBackground">@color/window_background</item>
+    </style>
+
+    <!-- Android 12+ style splash: shown until the signed-in session is known (MainActivity). -->
+    <style name="Theme.ITHelpdesk.Starting" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/window_background</item>
+        <item name="windowSplashScreenAnimatedIcon">@mipmap/ic_launcher_foreground</item>
+        <item name="postSplashScreenTheme">@style/Theme.ITHelpdesk</item>
+    </style>
+</resources>
