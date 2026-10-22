@@ -149,18 +149,23 @@ fun UserHomeScreen(
                         Box(
                             Modifier
                                 .weight(1f)
-                                .graphicsLayer(
-                                    scaleX = blinkScale,
-                                    scaleY = blinkScale,
-                                    alpha = blinkAlpha,
-                                )
                                 .clip(CircleShape)
                                 .background(Color.White)
                                 .clickable { onNewTicket(null) }
                                 .padding(horizontal = 12.dp, vertical = 12.dp),
                             contentAlignment = Alignment.Center,
                         ) {
-                            Text("＋ Raise a ticket", color = Color(0xFF7C3AED), style = MaterialTheme.typography.titleSmall, maxLines = 1)
+                            Text(
+                                "＋ Raise a ticket",
+                                color = Color(0xFF7C3AED),
+                                style = MaterialTheme.typography.titleSmall,
+                                maxLines = 1,
+                                modifier = Modifier.graphicsLayer(
+                                    scaleX = blinkScale,
+                                    scaleY = blinkScale,
+                                    alpha = blinkAlpha,
+                                ),
+                            )
                         }
 
                         Box(
