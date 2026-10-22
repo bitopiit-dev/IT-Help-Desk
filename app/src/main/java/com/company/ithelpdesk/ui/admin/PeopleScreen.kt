@@ -3,6 +3,14 @@
 
 package com.company.ithelpdesk.ui.admin
 
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.Surface
+import androidx.compose.ui.text.font.FontWeight
+import com.company.ithelpdesk.domain.model.Ticket
+import com.company.ithelpdesk.domain.model.UserPriority
+import com.company.ithelpdesk.ui.components.StatusChip
+import com.company.ithelpdesk.util.formatDate
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -67,12 +75,13 @@ import com.company.ithelpdesk.util.rememberNow
 
 /** Sign-up approvals and user management. Only admins can open this (rules enforce it too). */
 @Composable
-fun PeopleScreen(viewModel: PeopleViewModel) {
+fun PeopleScreen(viewModel: PeopleViewModel, onOpenTicket: (String) -> Unit = {}) {
     val ui by viewModel.ui.collectAsStateWithLifecycle()
     val message by viewModel.message.collectAsStateWithLifecycle()
     val snackbar = remember { SnackbarHostState() }
     val now = rememberNow()
     var tab by rememberSaveable { mutableStateOf(PeopleTab.PENDING) }
+    var priorityFilter by rememberSaveable { mutableStateOf<UserPriority?>(null) }
     var confirmDecline by remember { mutableStateOf<UserProfile?>(null) }
     var confirmResetPassword by remember { mutableStateOf<UserProfile?>(null) }
     var editUser by remember { mutableStateOf<UserProfile?>(null) }
@@ -105,7 +114,33 @@ fun PeopleScreen(viewModel: PeopleViewModel) {
                     Tab(selected = tab == t, onClick = { tab = t }, text = { Text("${t.label} (${ui.list(t).size})") })
                 }
             }
-            val list = ui.list(tab)
+
+            if (viewModel.me.isSuperAdmin && tab != PeopleTab.PENDING) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState())
+                        .padding(horizontal = 12.dp, vertical = 6.dp),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                ) {
+                    FilterChip(
+                        selected = priorityFilter == null,
+                        onClick = { priorityFilter = null },
+                        label = { Text("All Priority") },
+                        shape = CircleShape,
+                    )
+                    UserPriority.entries.forEach { p ->
+                        FilterChip(
+                            selected = priorityFilter == p,
+                            onClick = { priorityFilter = if (priorityFilter == p) null else p },
+                            label = { Text("${p.emoji} ${p.label}") },
+                            shape = CircleShape,
+                        )
+                    }
+                }
+            }
+
+            val list = ui.list(tab).filter { priorityFilter == null || it.userPriority == priorityFilter }
             when {
                 ui.loading -> SkeletonList()
                 ui.error != null -> ErrorBox(ui.error!!, onRetry = null)
@@ -119,6 +154,7 @@ fun PeopleScreen(viewModel: PeopleViewModel) {
                         PersonCard(
                             user = u,
                             isMe = u.uid == viewModel.me.uid,
+                            showPriorityTag = viewModel.me.isSuperAdmin,
                             now = now,
                             onApprove = { viewModel.approve(u) },
                             onDecline = { confirmDecline = u },
@@ -166,6 +202,8 @@ fun PeopleScreen(viewModel: PeopleViewModel) {
     editUser?.let { u ->
         EditUserDialog(
             user = u,
+            viewModel = viewModel,
+            onOpenTicket = onOpenTicket,
             onDismiss = { editUser = null },
             onSave = { name, employeeId, department, phone, location, extraFields ->
                 viewModel.updateUserProfile(u, name, employeeId, department, phone, location, extraFields)
@@ -179,6 +217,7 @@ fun PeopleScreen(viewModel: PeopleViewModel) {
 private fun PersonCard(
     user: UserProfile,
     isMe: Boolean,
+    showPriorityTag: Boolean,
     now: Long,
     onApprove: () -> Unit,
     onDecline: () -> Unit,
@@ -213,6 +252,7 @@ private fun PersonCard(
                 Text(
                     listOf(
                         if (user.isSuperAdmin) "👑 Super Admin" else if (user.role.isAdmin) "🛡️ Admin" else "",
+                        if (showPriorityTag || user.userPriority != UserPriority.STANDARD) "${user.userPriority.emoji} ${user.userPriority.label}" else "",
                         user.department,
                         user.phone,
                         if (user.employeeId.isNotBlank()) "ID ${user.employeeId}" else "",
@@ -281,6 +321,8 @@ private fun PersonCard(
 @Composable
 private fun EditUserDialog(
     user: UserProfile,
+    viewModel: PeopleViewModel,
+    onOpenTicket: (String) -> Unit,
     onDismiss: () -> Unit,
     onSave: (name: String, employeeId: String, department: String, phone: String, location: String, extraFields: Map<String, String>) -> Unit,
 ) {
@@ -293,16 +335,100 @@ private fun EditUserDialog(
     var extraMap by remember { mutableStateOf(user.extraFields.toMutableMap()) }
     var showAddFieldDialog by remember { mutableStateOf(false) }
 
+    val userTickets by viewModel.observeUserTickets(user.uid).collectAsStateWithLifecycle(emptyList())
+
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Edit Profile: ${user.firstName}") },
+        title = { Text("Profile & Details: ${user.firstName}") },
         text = {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(10.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
+                // Super Admin Priority Setting (only visible to Super Admin)
+                if (viewModel.me.isSuperAdmin) {
+                    Text(
+                        "⭐ User Priority (Super Admin Only)",
+                        style = MaterialTheme.typography.titleSmall,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    ) {
+                        UserPriority.entries.forEach { p ->
+                            FilterChip(
+                                selected = user.userPriority == p,
+                                onClick = { viewModel.setUserPriority(user, p) },
+                                label = { Text("${p.emoji} ${p.label}") },
+                                shape = CircleShape,
+                            )
+                        }
+                    }
+                }
+
+                // Ticket History Section
+                Text(
+                    "🎫 Ticket History (${userTickets.size} raised since joining)",
+                    style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+                if (userTickets.isEmpty()) {
+                    Text(
+                        "No tickets raised by ${user.firstName} yet.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                } else {
+                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        userTickets.forEach { t ->
+                            Surface(
+                                color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                                shape = MaterialTheme.shapes.medium,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable {
+                                        onDismiss()
+                                        onOpenTicket(t.id)
+                                    },
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(10.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                ) {
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(
+                                            "${t.displayNumber} · ${t.title}",
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            fontWeight = FontWeight.SemiBold,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis,
+                                        )
+                                        Text(
+                                            "${t.category} · ${formatDate(t.createdAt)}",
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        )
+                                    }
+                                    Spacer(Modifier.width(8.dp))
+                                    StatusChip(t.status)
+                                }
+                            }
+                        }
+                    }
+                }
+
+                Text(
+                    "Standard Info",
+                    style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(top = 4.dp),
+                )
+
                 OutlinedTextField(
                     value = name,
                     onValueChange = { name = it },
@@ -343,7 +469,7 @@ private fun EditUserDialog(
                     "Custom Sub-sections / Extra Info",
                     style = MaterialTheme.typography.titleSmall,
                     color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.padding(top = 8.dp),
+                    modifier = Modifier.padding(top = 4.dp),
                 )
 
                 extraMap.forEach { (key, valStr) ->

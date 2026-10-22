@@ -18,6 +18,7 @@ import com.company.ithelpdesk.domain.model.SlaSettings
 import com.company.ithelpdesk.domain.model.StatusChange
 import com.company.ithelpdesk.domain.model.Ticket
 import com.company.ithelpdesk.domain.model.TicketStatus
+import com.company.ithelpdesk.domain.model.UserPriority
 import com.company.ithelpdesk.domain.model.UserProfile
 import kotlinx.coroutines.flow.Flow
 
@@ -45,6 +46,7 @@ interface UserRepository {
     suspend fun decline(user: UserProfile, admin: UserProfile)
     suspend fun setRole(uid: String, role: Role)
     suspend fun setActive(uid: String, active: Boolean)
+    suspend fun setUserPriority(uid: String, userPriority: UserPriority)
     /** Compresses the picture to a small square and saves it as this user's profile photo. */
     suspend fun setPhoto(uid: String, uri: Uri)
     suspend fun removePhoto(uid: String)

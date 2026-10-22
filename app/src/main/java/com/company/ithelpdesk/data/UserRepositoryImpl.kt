@@ -13,6 +13,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import com.company.ithelpdesk.domain.model.Role
+import com.company.ithelpdesk.domain.model.UserPriority
 import com.company.ithelpdesk.domain.model.UserProfile
 import com.company.ithelpdesk.domain.repository.NotificationRepository
 import com.company.ithelpdesk.domain.repository.UserRepository
@@ -160,6 +161,10 @@ class UserRepositoryImpl @Inject constructor(
 
     override suspend fun setActive(uid: String, active: Boolean) {
         users.document(uid).update("isActive", active).await()
+    }
+
+    override suspend fun setUserPriority(uid: String, userPriority: UserPriority) {
+        users.document(uid).update("userPriority", userPriority.name).await()
     }
 
     override suspend fun addFcmToken(uid: String, token: String) {

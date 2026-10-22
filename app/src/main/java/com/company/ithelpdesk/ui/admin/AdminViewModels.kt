@@ -15,6 +15,7 @@ import com.company.ithelpdesk.domain.model.SlaSettings
 import com.company.ithelpdesk.domain.model.SlaState
 import com.company.ithelpdesk.domain.model.Ticket
 import com.company.ithelpdesk.domain.model.TicketStatus
+import com.company.ithelpdesk.domain.model.UserPriority
 import com.company.ithelpdesk.domain.model.UserProfile
 import com.company.ithelpdesk.domain.repository.AuthRepository
 import com.company.ithelpdesk.domain.repository.SettingsRepository
@@ -22,6 +23,7 @@ import com.company.ithelpdesk.domain.repository.TicketRepository
 import com.company.ithelpdesk.domain.repository.UserRepository
 import com.company.ithelpdesk.util.userMessage
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -80,6 +82,7 @@ data class PeopleUi(
 class PeopleViewModel @Inject constructor(
     private val users: UserRepository,
     private val auth: AuthRepository,
+    private val ticketRepo: TicketRepository,
     session: SessionManager,
 ) : AdminBaseViewModel() {
     val me: UserProfile = session.requireProfile()
@@ -88,6 +91,18 @@ class PeopleViewModel @Inject constructor(
         .map { PeopleUi(loading = false, all = it) }
         .catch { emit(PeopleUi(loading = false, error = it.userMessage())) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), PeopleUi())
+
+    fun observeUserTickets(uid: String): Flow<List<Ticket>> = ticketRepo.observeMyTickets(uid)
+
+    fun setUserPriority(u: UserProfile, priority: UserPriority) {
+        if (!me.isSuperAdmin) {
+            setMessage("Only Super Admin can change user priority.")
+            return
+        }
+        action("${u.firstName}'s priority updated to ${priority.label} ${priority.emoji}") {
+            users.setUserPriority(u.uid, priority)
+        }
+    }
 
     fun approve(u: UserProfile) = action("${u.firstName} approved 🎉") { users.approve(u, me) }
     fun decline(u: UserProfile) = action("Request from ${u.firstName} declined") { users.decline(u, me) }

@@ -179,7 +179,9 @@ fun AdminShell(pendingTicketId: String?, onPendingTicketHandled: () -> Unit) {
                         onOpenTicket = { nav.navigate(AdminRoutes.ticket(it)) },
                     )
                 }
-                composable(AdminRoutes.PEOPLE) { PeopleScreen(peopleVm) }
+                composable(AdminRoutes.PEOPLE) {
+                    PeopleScreen(peopleVm, onOpenTicket = { nav.navigate(AdminRoutes.ticket(it)) })
+                }
                 composable(AdminRoutes.ALERTS) {
                     NotificationsScreen(
                         alertsVm,

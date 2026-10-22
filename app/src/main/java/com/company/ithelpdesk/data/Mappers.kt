@@ -19,6 +19,7 @@ import com.company.ithelpdesk.domain.model.SlaTarget
 import com.company.ithelpdesk.domain.model.StatusChange
 import com.company.ithelpdesk.domain.model.Ticket
 import com.company.ithelpdesk.domain.model.TicketStatus
+import com.company.ithelpdesk.domain.model.UserPriority
 import com.company.ithelpdesk.domain.model.UserProfile
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FieldValue
@@ -62,6 +63,7 @@ fun DocumentSnapshot.toUserProfile(): UserProfile? {
         approvedByName = getString("approvedByName") ?: "",
         photoVersion = millis("photoUpdatedAt") ?: 0L,
         extraFields = extraMap,
+        userPriority = UserPriority.from(getString("userPriority")),
     )
 }
 

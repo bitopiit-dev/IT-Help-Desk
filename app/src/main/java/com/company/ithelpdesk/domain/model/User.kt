@@ -31,6 +31,17 @@ enum class Role(val label: String) {
     }
 }
 
+enum class UserPriority(val label: String, val emoji: String) {
+    STANDARD("Standard", "👤"),
+    VIP("VIP", "⭐"),
+    HIGH("High Priority", "⚡"),
+    LOW("Low Priority", "🐢");
+
+    companion object {
+        fun from(value: String?): UserPriority = entries.firstOrNull { it.name.equals(value, ignoreCase = true) } ?: STANDARD
+    }
+}
+
 data class UserProfile(
     val uid: String,
     val name: String,
@@ -49,6 +60,8 @@ data class UserProfile(
     val photoVersion: Long = 0L,
     /** Custom key-value sub-sections added by admins (e.g. "Designation" -> "Sr. Executive"). */
     val extraFields: Map<String, String> = emptyMap(),
+    /** User Priority / VIP status, managed and visible exclusively to Super Admin. */
+    val userPriority: UserPriority = UserPriority.STANDARD,
 ) {
     /** Permanent Super Admin who can grant admin roles and cannot be demoted or blocked. */
     val isSuperAdmin: Boolean get() = role == Role.SUPER_ADMIN || email.equals(Role.SUPER_ADMIN_EMAIL, ignoreCase = true)
