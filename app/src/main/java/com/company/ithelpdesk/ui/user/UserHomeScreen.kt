@@ -150,20 +150,20 @@ fun UserHomeScreen(
 
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Box(
                             Modifier
-                                .weight(1.1f)
+                                .weight(1f)
                                 .clip(CircleShape)
                                 .background(Color.White)
                                 .clickable { onNewTicket(null) }
-                                .padding(horizontal = 8.dp, vertical = 12.dp),
+                                .padding(horizontal = 12.dp, vertical = 12.dp),
                             contentAlignment = Alignment.Center,
                         ) {
                             Text(
-                                "＋ Ticket",
+                                "＋ Raise a ticket",
                                 color = Color(0xFF7C3AED),
                                 style = MaterialTheme.typography.titleSmall,
                                 maxLines = 1,
@@ -184,22 +184,10 @@ fun UserHomeScreen(
                                     val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://chat.whatsapp.com/FsHMyUp3jnJ31IUQ7Npcwm"))
                                     context.startActivity(intent)
                                 }
-                                .padding(horizontal = 8.dp, vertical = 12.dp),
+                                .padding(horizontal = 12.dp, vertical = 12.dp),
                             contentAlignment = Alignment.Center,
                         ) {
-                            Text("💬 WhatsApp", color = Color(0xFF16A34A), style = MaterialTheme.typography.titleSmall, maxLines = 1)
-                        }
-
-                        Box(
-                            Modifier
-                                .weight(1f)
-                                .clip(CircleShape)
-                                .background(Color.White)
-                                .clickable { showShareDialog = true }
-                                .padding(horizontal = 8.dp, vertical = 12.dp),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            Text("📲 QR Code", color = Color(0xFF0284C7), style = MaterialTheme.typography.titleSmall, maxLines = 1)
+                            Text("💬 WhatsApp Group", color = Color(0xFF16A34A), style = MaterialTheme.typography.titleSmall, maxLines = 1)
                         }
                     }
                     Spacer(Modifier.height(8.dp))
