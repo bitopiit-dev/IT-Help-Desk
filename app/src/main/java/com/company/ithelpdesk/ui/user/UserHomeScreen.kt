@@ -75,10 +75,9 @@ import com.company.ithelpdesk.ui.components.StatTile
 import com.company.ithelpdesk.ui.components.UserTicketCard
 import com.company.ithelpdesk.ui.theme.LocalBrand
 import com.company.ithelpdesk.util.rememberNow
-import java.time.LocalTime
 import java.util.Calendar
 
-private fun greeting(): String = when (Calendar.getInstance().get(Calendar.HOUR_OF_DAY)) {
+private fun greeting(): String = when (Calendar.getInstance()[Calendar.HOUR_OF_DAY]) {
     in 5..11 -> "Good morning"
     in 12..16 -> "Good afternoon"
     in 17..21 -> "Good evening"

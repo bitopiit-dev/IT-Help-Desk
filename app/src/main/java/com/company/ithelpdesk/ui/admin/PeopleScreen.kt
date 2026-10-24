@@ -7,7 +7,6 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Surface
 import androidx.compose.ui.text.font.FontWeight
-import com.company.ithelpdesk.domain.model.Ticket
 import com.company.ithelpdesk.domain.model.UserPriority
 import com.company.ithelpdesk.ui.components.StatusChip
 import com.company.ithelpdesk.util.formatDate

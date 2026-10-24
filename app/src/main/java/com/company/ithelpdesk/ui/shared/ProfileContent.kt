@@ -440,7 +440,7 @@ fun ProfileContent(viewModel: ProfileViewModel, extra: (@Composable () -> Unit)?
                     Spacer(Modifier.padding(4.dp))
                     Text("Sign out")
                 }
-                androidx.compose.material3.TextButton(
+                TextButton(
                     onClick = { showAbout = true },
                     modifier = Modifier.align(Alignment.CenterHorizontally),
                 ) { Text("About & copyright") }
