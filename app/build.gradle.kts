@@ -28,10 +28,23 @@ android {
         // Keep applicationId as registered in Firebase (google-services.json). The app shows as "BGLITDesk".
     }
 
+    signingConfigs {
+        create("release") {
+            storeFile = file("keystore/release.jks")
+            storePassword = "bglithelpdeskpass"
+            keyAlias = "bglitdesk"
+            keyPassword = "bglithelpdeskpass"
+        }
+    }
+
     buildTypes {
+        debug {
+            signingConfig = signingConfigs.getByName("release")
+        }
         release {
             isMinifyEnabled = true
             isShrinkResources = true
+            signingConfig = signingConfigs.getByName("release")
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
     }
