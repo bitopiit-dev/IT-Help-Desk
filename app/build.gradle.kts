@@ -15,11 +15,15 @@ android {
 
     defaultConfig {
         applicationId = "com.bitopibd.bglithelpdesk"
-        minSdk = 26
+        minSdk = 24
         targetSdk = 35
-        versionCode = 4
-        versionName = "2.1.1"
+        versionCode = 5
+        versionName = "2.1.2"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        ndk {
+            abiFilters += listOf("armeabi-v7a", "arm64-v8a", "x86", "x86_64")
+        }
 
         // Keep applicationId as registered in Firebase (google-services.json). The app shows as "BGLITDesk".
     }
