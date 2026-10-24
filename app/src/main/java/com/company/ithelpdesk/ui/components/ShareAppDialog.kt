@@ -4,9 +4,9 @@
 package com.company.ithelpdesk.ui.components
 
 import android.content.Intent
+import android.net.Uri
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -30,6 +30,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
@@ -50,13 +51,13 @@ fun ShareAppDialog(onDismiss: () -> Unit) {
             Column(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(12.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
                 Text(
-                    "Scan this QR code with any phone camera to download & install BGL-IT Help instantly!",
-                    style = MaterialTheme.typography.bodyMedium,
+                    "Scan This Code & Install BGL-IT Help App",
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                     textAlign = TextAlign.Center,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = MaterialTheme.colorScheme.onSurface,
                 )
 
                 Surface(
@@ -64,7 +65,7 @@ fun ShareAppDialog(onDismiss: () -> Unit) {
                     shape = RoundedCornerShape(16.dp),
                     modifier = Modifier
                         .size(200.dp)
-                        .padding(8.dp),
+                        .padding(6.dp),
                 ) {
                     AsyncImage(
                         model = qrCodeUrl,
@@ -74,17 +75,19 @@ fun ShareAppDialog(onDismiss: () -> Unit) {
                     )
                 }
 
-                Text(
-                    "Direct APK Link:",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.primary,
-                )
-                Text(
-                    downloadUrl,
-                    style = MaterialTheme.typography.bodySmall,
-                    textAlign = TextAlign.Center,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+                TextButton(
+                    onClick = {
+                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(downloadUrl))
+                        context.startActivity(intent)
+                    },
+                ) {
+                    Text(
+                        "Owned by K A Rahman",
+                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                        color = MaterialTheme.colorScheme.primary,
+                        textAlign = TextAlign.Center,
+                    )
+                }
             }
         },
         confirmButton = {
