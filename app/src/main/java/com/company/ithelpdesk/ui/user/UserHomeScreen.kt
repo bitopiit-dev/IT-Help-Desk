@@ -13,6 +13,7 @@ import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -58,6 +59,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.company.ithelpdesk.R
 import com.company.ithelpdesk.ui.components.UserAvatar
 import com.company.ithelpdesk.ui.components.Banner
 import com.company.ithelpdesk.ui.components.CountBubble
@@ -74,8 +76,9 @@ import com.company.ithelpdesk.ui.components.UserTicketCard
 import com.company.ithelpdesk.ui.theme.LocalBrand
 import com.company.ithelpdesk.util.rememberNow
 import java.time.LocalTime
+import java.util.Calendar
 
-private fun greeting(): String = when (LocalTime.now().hour) {
+private fun greeting(): String = when (Calendar.getInstance().get(Calendar.HOUR_OF_DAY)) {
     in 5..11 -> "Good morning"
     in 12..16 -> "Good afternoon"
     in 17..21 -> "Good evening"
@@ -184,10 +187,19 @@ fun UserHomeScreen(
                                     val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://chat.whatsapp.com/FsHMyUp3jnJ31IUQ7Npcwm"))
                                     context.startActivity(intent)
                                 }
-                                .padding(horizontal = 12.dp, vertical = 12.dp),
+                                .padding(horizontal = 10.dp, vertical = 10.dp),
                             contentAlignment = Alignment.Center,
                         ) {
-                            Text("💬 WhatsApp Group", color = Color(0xFF16A34A), style = MaterialTheme.typography.titleSmall, maxLines = 1)
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    painter = painterResource(R.drawable.ic_whatsapp),
+                                    contentDescription = "WhatsApp Group",
+                                    tint = Color.Unspecified,
+                                    modifier = Modifier.size(20.dp),
+                                )
+                                Spacer(Modifier.width(6.dp))
+                                Text("WhatsApp Group", color = Color(0xFF16A34A), style = MaterialTheme.typography.titleSmall, maxLines = 1)
+                            }
                         }
                     }
                     Spacer(Modifier.height(8.dp))
