@@ -3,6 +3,7 @@
 
 package com.company.ithelpdesk.data
 
+import com.company.ithelpdesk.domain.model.AppUpdateInfo
 import com.company.ithelpdesk.domain.model.Category
 import com.company.ithelpdesk.domain.model.Department
 import com.company.ithelpdesk.domain.model.SlaSettings
@@ -56,5 +57,31 @@ class SettingsRepositoryImpl @Inject constructor(
 
     override suspend fun deleteDepartment(id: String) {
         departments.document(id).delete().await()
+    }
+
+    private val appVersionDoc get() = db.collection("settings").document("version")
+
+    override suspend fun getAppUpdateInfo(): AppUpdateInfo {
+        val snap = runCatching { appVersionDoc.get().await() }.getOrNull()
+        if (snap != null && snap.exists()) {
+            val code = snap.getLong("versionCode")?.toInt() ?: 5
+            val name = snap.getString("versionName") ?: "2.1.2"
+            val url = snap.getString("downloadUrl")
+                ?: "https://raw.githubusercontent.com/bitopiit-dev/IT-Help-Desk/main/BGL-IT_Help.apk"
+            val notes = snap.getString("notes") ?: "Bug fixes and performance improvements."
+            return AppUpdateInfo(code, name, url, notes)
+        }
+        return AppUpdateInfo()
+    }
+
+    override suspend fun publishAppUpdate(info: AppUpdateInfo) {
+        appVersionDoc.set(
+            mapOf(
+                "versionCode" to info.latestVersionCode,
+                "versionName" to info.latestVersionName,
+                "downloadUrl" to info.downloadUrl,
+                "notes" to info.notes,
+            ),
+        ).await()
     }
 }

@@ -5,8 +5,10 @@ package com.company.ithelpdesk.ui.shared
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.company.ithelpdesk.BuildConfig
 import com.company.ithelpdesk.data.SessionManager
 import com.company.ithelpdesk.data.SessionState
+import com.company.ithelpdesk.domain.model.AppUpdateInfo
 import com.company.ithelpdesk.domain.model.Department
 import com.company.ithelpdesk.domain.model.UserProfile
 import com.company.ithelpdesk.domain.repository.AuthRepository
@@ -31,7 +33,7 @@ class ProfileViewModel @Inject constructor(
     private val session: SessionManager,
     private val users: UserRepository,
     private val auth: AuthRepository,
-    settings: SettingsRepository,
+    private val settings: SettingsRepository,
 ) : ViewModel() {
 
     val profile: StateFlow<UserProfile> = session.state
@@ -102,6 +104,37 @@ class ProfileViewModel @Inject constructor(
                 _message.value = "Password reset link sent to ${profile.value.email} 📬"
             } catch (e: Exception) {
                 _message.value = e.userMessage()
+            }
+        }
+    }
+
+    sealed interface UpdateCheckState {
+        data object Checking : UpdateCheckState
+        data class UpToDate(val version: String) : UpdateCheckState
+        data class UpdateAvailable(val info: AppUpdateInfo) : UpdateCheckState
+        data class Error(val error: String) : UpdateCheckState
+    }
+
+    private val _updateCheck = MutableStateFlow<UpdateCheckState?>(null)
+    val updateCheck: StateFlow<UpdateCheckState?> = _updateCheck.asStateFlow()
+
+    fun consumeUpdateCheck() { _updateCheck.value = null }
+
+    fun checkForUpdates() {
+        viewModelScope.launch {
+            _updateCheck.value = UpdateCheckState.Checking
+            try {
+                val info = settings.getAppUpdateInfo()
+                val currentCode = BuildConfig.VERSION_CODE
+                val currentName = BuildConfig.VERSION_NAME
+
+                if (info.latestVersionCode > currentCode) {
+                    _updateCheck.value = UpdateCheckState.UpdateAvailable(info)
+                } else {
+                    _updateCheck.value = UpdateCheckState.UpToDate(currentName)
+                }
+            } catch (e: Exception) {
+                _updateCheck.value = UpdateCheckState.Error(e.userMessage())
             }
         }
     }

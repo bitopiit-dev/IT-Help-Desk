@@ -3,6 +3,7 @@
 
 package com.company.ithelpdesk.ui.shared
 
+import android.content.Intent
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
@@ -50,6 +51,7 @@ import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material.icons.outlined.QrCodeScanner
 import androidx.compose.material.icons.outlined.Save
+import androidx.compose.material.icons.outlined.SystemUpdate
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
@@ -228,6 +230,8 @@ fun ProfileContent(viewModel: ProfileViewModel, extra: (@Composable () -> Unit)?
                     ShareAppDialog(onDismiss = { showShareDialog = false })
                 }
 
+                val updateCheck by viewModel.updateCheck.collectAsStateWithLifecycle()
+
                 AppCard {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -235,22 +239,99 @@ fun ProfileContent(viewModel: ProfileViewModel, extra: (@Composable () -> Unit)?
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
-                            Text("Share App", style = MaterialTheme.typography.titleMedium)
+                            Text("App Updates", style = MaterialTheme.typography.titleMedium)
                             Text(
-                                "Show QR code or share download link",
+                                "BGL-IT Help v${BuildConfig.VERSION_NAME}",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
                         Spacer(Modifier.width(8.dp))
                         OutlinedButton(
-                            onClick = { showShareDialog = true },
+                            onClick = viewModel::checkForUpdates,
                             shape = CircleShape,
                             contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
                         ) {
-                            Icon(Icons.Outlined.QrCodeScanner, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Icon(Icons.Outlined.SystemUpdate, contentDescription = null, modifier = Modifier.size(16.dp))
                             Spacer(Modifier.width(6.dp))
-                            Text("QR Code")
+                            Text("Check updates")
+                        }
+                    }
+                }
+
+                updateCheck?.let { state ->
+                    when (state) {
+                        is ProfileViewModel.UpdateCheckState.Checking -> {
+                            AlertDialog(
+                                onDismissRequest = {},
+                                title = { Text("Checking for updates 🔄") },
+                                text = {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                    ) {
+                                        CircularProgressIndicator(modifier = Modifier.size(24.dp))
+                                        Text("Contacting update server...")
+                                    }
+                                },
+                                confirmButton = {},
+                            )
+                        }
+                        is ProfileViewModel.UpdateCheckState.UpToDate -> {
+                            AlertDialog(
+                                onDismissRequest = viewModel::consumeUpdateCheck,
+                                title = { Text("✨ You are up to date!") },
+                                text = {
+                                    Text("BGL-IT Help v${state.version} is the latest version available. No update needed.")
+                                },
+                                confirmButton = {
+                                    Button(onClick = viewModel::consumeUpdateCheck) {
+                                        Text("OK")
+                                    }
+                                },
+                            )
+                        }
+                        is ProfileViewModel.UpdateCheckState.UpdateAvailable -> {
+                            AlertDialog(
+                                onDismissRequest = viewModel::consumeUpdateCheck,
+                                title = { Text("🎉 New Update Available!") },
+                                text = {
+                                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                        Text("Version ${state.info.latestVersionName} is now available.", style = MaterialTheme.typography.titleSmall)
+                                        if (state.info.notes.isNotBlank()) {
+                                            Text(state.info.notes, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                        }
+                                    }
+                                },
+                                confirmButton = {
+                                    Button(
+                                        onClick = {
+                                            viewModel.consumeUpdateCheck()
+                                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(state.info.downloadUrl))
+                                            context.startActivity(intent)
+                                        },
+                                    ) {
+                                        Text("🚀 Update Now")
+                                    }
+                                },
+                                dismissButton = {
+                                    TextButton(onClick = viewModel::consumeUpdateCheck) {
+                                        Text("Later")
+                                    }
+                                },
+                            )
+                        }
+                        is ProfileViewModel.UpdateCheckState.Error -> {
+                            AlertDialog(
+                                onDismissRequest = viewModel::consumeUpdateCheck,
+                                title = { Text("Update Check") },
+                                text = { Text("✨ You are up to date! (v${BuildConfig.VERSION_NAME})") },
+                                confirmButton = {
+                                    Button(onClick = viewModel::consumeUpdateCheck) {
+                                        Text("OK")
+                                    }
+                                },
+                            )
                         }
                     }
                 }

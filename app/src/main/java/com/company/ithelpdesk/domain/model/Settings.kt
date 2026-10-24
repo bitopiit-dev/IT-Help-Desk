@@ -54,3 +54,10 @@ data class Category(
 }
 
 data class Department(val id: String, val name: String)
+
+data class AppUpdateInfo(
+    val latestVersionCode: Int = 5,
+    val latestVersionName: String = "2.1.2",
+    val downloadUrl: String = "https://raw.githubusercontent.com/bitopiit-dev/IT-Help-Desk/main/BGL-IT_Help.apk",
+    val notes: String = "Bug fixes and performance improvements.",
+)

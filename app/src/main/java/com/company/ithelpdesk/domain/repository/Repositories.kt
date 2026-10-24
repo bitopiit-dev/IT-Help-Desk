@@ -7,6 +7,7 @@ import android.net.Uri
 import com.company.ithelpdesk.domain.logic.DashboardSource
 import com.company.ithelpdesk.domain.logic.NotificationDraft
 import com.company.ithelpdesk.domain.model.AppNotification
+import com.company.ithelpdesk.domain.model.AppUpdateInfo
 import com.company.ithelpdesk.domain.model.Attachment
 import com.company.ithelpdesk.domain.model.AuthUser
 import com.company.ithelpdesk.domain.model.Category
@@ -102,4 +103,6 @@ interface SettingsRepository {
     fun observeDepartments(): Flow<List<Department>>
     suspend fun saveDepartment(name: String)
     suspend fun deleteDepartment(id: String)
+    suspend fun getAppUpdateInfo(): AppUpdateInfo
+    suspend fun publishAppUpdate(info: AppUpdateInfo)
 }
