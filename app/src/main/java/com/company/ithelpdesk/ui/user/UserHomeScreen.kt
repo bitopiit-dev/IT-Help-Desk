@@ -180,26 +180,19 @@ fun UserHomeScreen(
 
                         Box(
                             Modifier
-                                .weight(1f)
                                 .clip(CircleShape)
-                                .background(Color.White)
                                 .clickable {
                                     val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://chat.whatsapp.com/FsHMyUp3jnJ31IUQ7Npcwm"))
                                     context.startActivity(intent)
-                                }
-                                .padding(horizontal = 10.dp, vertical = 10.dp),
+                                },
                             contentAlignment = Alignment.Center,
                         ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(
-                                    painter = painterResource(R.drawable.ic_whatsapp),
-                                    contentDescription = "WhatsApp Group",
-                                    tint = Color.Unspecified,
-                                    modifier = Modifier.size(20.dp),
-                                )
-                                Spacer(Modifier.width(6.dp))
-                                Text("WhatsApp Group", color = Color(0xFF16A34A), style = MaterialTheme.typography.titleSmall, maxLines = 1)
-                            }
+                            Icon(
+                                painter = painterResource(R.drawable.ic_whatsapp),
+                                contentDescription = "WhatsApp Group",
+                                tint = Color.Unspecified,
+                                modifier = Modifier.size(46.dp),
+                            )
                         }
                     }
                     Spacer(Modifier.height(8.dp))
