@@ -16,13 +16,16 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.StarOutline
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
@@ -83,6 +86,9 @@ fun ResolveDialog(onDismiss: () -> Unit, onConfirm: (Resolution) -> Unit) {
     var action by rememberSaveable { mutableStateOf("") }
     var type by rememberSaveable { mutableStateOf<String?>(null) }
     var parts by rememberSaveable { mutableStateOf("") }
+
+    val suggestions = listOf("Software Issue", "Hardware Issue", "Others")
+
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Resolve ticket") },
@@ -90,6 +96,21 @@ fun ResolveDialog(onDismiss: () -> Unit, onConfirm: (Resolution) -> Unit) {
             Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedTextField(rootCause, { rootCause = it }, label = { Text("Root cause") }, minLines = 2, modifier = Modifier.fillMaxWidth())
                 OutlinedTextField(action, { action = it }, label = { Text("Action taken") }, minLines = 2, modifier = Modifier.fillMaxWidth())
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                ) {
+                    suggestions.forEach { s ->
+                        FilterChip(
+                            selected = action == s,
+                            onClick = { action = s },
+                            label = { Text(s) },
+                            shape = CircleShape,
+                        )
+                    }
+                }
                 DropdownField("Resolution type", RESOLUTION_TYPES, type, { it }, { type = it }, Modifier.fillMaxWidth())
                 OutlinedTextField(parts, { parts = it }, label = { Text("Parts used (optional)") }, singleLine = true, modifier = Modifier.fillMaxWidth())
                 Text("The requester will be asked to confirm the fix.", style = MaterialTheme.typography.bodySmall)
