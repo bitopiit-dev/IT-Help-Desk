@@ -39,7 +39,7 @@ import coil.compose.AsyncImage
 @Composable
 fun ShareAppDialog(onDismiss: () -> Unit) {
     val context = LocalContext.current
-    val downloadUrl = "https://files.catbox.moe/f4y3wn.apk"
+    val downloadUrl = "https://raw.githack.com/bitopiit-dev/IT-Help-Desk/main/index.html"
     val qrCodeUrl = "https://api.qrserver.com/v1/create-qr-code/?size=350x350&data=$downloadUrl"
 
     AlertDialog(
